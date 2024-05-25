@@ -3,19 +3,28 @@ import java.util.regex.Matcher;
 
 public class Shape {
 
-  private final int NUM_SPOTS = 16;
-  private final String SEP = ":";
+  private static final int NUM_SPOTS = 16;
+  private static final char CIRC = 'C';
+  private static final char RECT = 'R';
+  private static final char STAR = 'S';
+  private static final char WIND = 'W';
+  private static final char CRYS = 'c';
+  private static final char PIN = 'P';
+  private static final String SEP = ":";
 
-  private String code;
-  private int intValue;
-
-  private String[] spots = new String[NUM_SPOTS];
+  private String code = "";
+  private int intValue = 0;
 
   public Shape(String code) throws Exception {
     if (!verifyCode(code))
       throw new Exception("Invalid shape code");
     this.code = code;
-    parseCode(code);
+    this.intValue = parseCode(code);
+  }
+
+  public Shape(int value) {
+    this.code = makeCode(value);
+    this.intValue = value;
   }
 
   private boolean verifyCode(String code) {
@@ -30,7 +39,8 @@ public class Shape {
     return true;
   }
 
-  private void parseCode(String code) {
+  private int parseCode(String code) {
+    String[] spots = new String[NUM_SPOTS];
     String[] values = code.split(SEP);
     Pattern p = Pattern.compile(".{2}");
     Matcher m;
@@ -66,29 +76,65 @@ public class Shape {
         break;
       }
     }
-    intValue = (v2 << 16) + v1;
     // System.out.printf("%08x\n", intValue);
+    return (v2 << 16) + v1;
+  }
+
+  private String toBin(int value) {
+    String num = Integer.toString(v1(value), 2);
+    String pad = "0".repeat(16 - num.length());
+    return pad + num;
+  }
+
+  private String makeCode(int value) {
+    String COLORS = "rgbw";
+    String EMPTY = "--";
+
+    String bin1 = toBin(v1(value));
+    String bin2 = toBin(v2(value));
+    String num, val = "";
+    char color;
+    String result = "";
+    for (int i = 0; i < 16; i++) {
+      num = "" + bin2.charAt(15 - i) + bin1.charAt(15 - i);
+      color = COLORS.charAt(i / 4);
+      switch (num) {
+      case "00":
+        val = EMPTY;
+        break;
+      case "01":
+        val = "" + RECT + color;
+        break;
+      case "10":
+        val = "" + PIN + '-';
+        break;
+      case "11":
+        val = "" + CRYS + color;
+        break;
+      }
+      if (i == 4 || i == 8 || i == 12) {
+        result += SEP;
+      }
+      result += val;
+    }
+
+    return result;
   }
 
   public String toString() {
-    return code;
+    return String.format("code: %s, value: %08x", code, intValue);
   }
 
   public int intValue() {
     return intValue;
   }
 
-  private static int convertToInt(String code) {
-    return 0;
+  public static int v1(int value) {
+    return value & 0xffff;
   }
 
-  public static int intValue(String code) {
-    return Shape.convertToInt(code);
-  }
-
-  public static String valueOf(int value) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'valueOf'");
+  public static int v2(int value) {
+    return value >>> 16;
   }
 
 }

@@ -72,12 +72,17 @@ public class Main {
     }
     System.out.println("circle: " + circle);
 
-    // ShapezOps ops = new ShapezOps();
-    // int s1 = Shape.intValue(circle.toString());
-    // int s2 = ops.cutRight(s1);
-    // System.out.println("Shape1: " + Shape.valueOf(s1));
-    // System.out.println("Shape2: " + Shape.valueOf(s2));
+    ShapezOps ops = new ShapezOps();
+    int s1 = circle.intValue();
+    int s2 = ops.cutLeft(s1);
+    int s3 = ops.cutRight(s1);
+    System.out.println("Shape 1: " + new Shape(s1));
+    System.out.println("Shape 2: " + new Shape(s2));
+    System.out.println("Shape 3: " + new Shape(s3));
 
+    System.out.println();
+    int t = 0xffffffff;
+    System.out.printf("%08x, %08x, %08x", t, Shape.v1(t), Shape.v2(t));
   }
 
 }
