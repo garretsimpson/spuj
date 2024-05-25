@@ -18,34 +18,6 @@ public class Shape {
     parseCode(code);
   }
 
-  private void parseCode(String code) {
-    String RE = ".{2}";
-    int num = 0;
-
-    String[] values = code.split(SEP);
-    Pattern p = Pattern.compile(RE);
-    Matcher m;
-    for (String val : values) {
-      m = p.matcher(val);
-      while (m.find()) {
-        spots[num++] = m.group();
-      }
-    }
-
-    for (int i = 0; i < NUM_SPOTS; ++i) {
-      System.out.print(spots[i] + " ");
-    }
-    System.out.println();
-  }
-
-  public String toString() {
-    return code;
-  }
-
-  public int intValue() {
-    return this.intValue;
-  }
-
   private boolean verifyCode(String code) {
     String RE = "((?:[CRSWc][urygcbmw])|(?:P-)|(?:--)){4}";
     String[] values = code.split(SEP);
@@ -56,6 +28,54 @@ public class Shape {
         return false;
     }
     return true;
+  }
+
+  private void parseCode(String code) {
+    String[] values = code.split(SEP);
+    Pattern p = Pattern.compile(".{2}");
+    Matcher m;
+    int num = 0;
+    for (String val : values) {
+      m = p.matcher(val);
+      while (m.find()) {
+        spots[num++] = m.group();
+      }
+    }
+
+    int v1 = 0, v2 = 0;
+    String s;
+    for (int i = NUM_SPOTS - 1; i >= 0; --i) {
+      v1 <<= 1;
+      v2 <<= 1;
+      s = spots[i];
+      if (s == null)
+        continue;
+      switch (s.charAt(0)) {
+      case 'C':
+      case 'R':
+      case 'S':
+      case 'W':
+        v1 += 1;
+        break;
+      case 'P':
+        v2 += 1;
+        break;
+      case 'c':
+        v1 += 1;
+        v2 += 1;
+        break;
+      }
+    }
+    intValue = (v2 << 16) + v1;
+    // System.out.printf("%08x\n", intValue);
+  }
+
+  public String toString() {
+    return code;
+  }
+
+  public int intValue() {
+    return intValue;
   }
 
   private static int convertToInt(String code) {
