@@ -95,8 +95,8 @@ public class Shape {
     String num, val = "";
     char color;
     String result = "";
-    for (int i = 0; i < 16; i++) {
-      num = "" + bin2.charAt(15 - i) + bin1.charAt(15 - i);
+    for (int i = 0; i < NUM_SPOTS; ++i) {
+      num = "" + bin2.charAt(NUM_SPOTS - i - 1) + bin1.charAt(NUM_SPOTS - i - 1);
       color = COLORS.charAt(i / 4);
       switch (num) {
       case "00":

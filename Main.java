@@ -65,22 +65,32 @@ public class Main {
 
     System.out.println();
     Shape circle = null;
+    Shape halfRect = null;
     try {
       circle = new Shape(FULL_CIRC);
+      halfRect = new Shape(HALF_RECT);
     } catch (Exception e) {
       e.printStackTrace();
     }
     System.out.println("circle: " + circle);
 
-    ShapezOps ops = new ShapezOps();
+    ShapeOps ops = new ShapeOps();
     int s1 = circle.intValue();
     int s2 = ops.cutLeft(s1);
     int s3 = ops.cutRight(s1);
     System.out.println("Shape 1: " + new Shape(s1));
     System.out.println("Shape 2: " + new Shape(s2));
     System.out.println("Shape 3: " + new Shape(s3));
-
     System.out.println();
+
+    s1 = halfRect.intValue();
+    s2 = ops.rotateRight(s1);
+    s3 = ops.rotateRight(s2);
+    System.out.println("Shape 1: " + new Shape(s1));
+    System.out.println("Shape 2: " + new Shape(s2));
+    System.out.println("Shape 3: " + new Shape(s3));
+    System.out.println();
+
     int t = 0xffffffff;
     System.out.printf("%08x, %08x, %08x", t, Shape.v1(t), Shape.v2(t));
   }
