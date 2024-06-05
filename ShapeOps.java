@@ -1,22 +1,44 @@
-
 /**
  * ShapeOps
  */
 
 public class ShapeOps {
 
-  public int keyCode(int value) {
-    int mval = mirrorCode(value);
+  public enum OPS {
+    ROTATE_RIGHT, ROTATE_180, ROTATE_LEFT, CUT_LEFT, CUT_RIGHT;
+
+    // Function<Integer, Integer> func;
+  };
+
+  public int call(OPS op, int... value) {
+    switch (op) {
+    case ROTATE_RIGHT:
+      return rotateRight(value[0]);
+    case ROTATE_180:
+      return rotate180(value[0]);
+    case ROTATE_LEFT:
+      return rotateLeft(value[0]);
+    case CUT_RIGHT:
+      return cutRight(value[0]);
+    case CUT_LEFT:
+      return cutLeft(value[0]);
+    default:
+      return 0;
+    }
+  }
+
+  public int keyValue(int value) {
+    int mval = mirrorValue(value);
     int result = Math.min(value, mval);
 
     for (int i = 1; i < 4; ++i) {
-      result = Math.min(result, rotateCode(value, i));
-      result = Math.min(result, rotateCode(mval, i));
+      result = Math.min(result, rotate(value, i));
+      result = Math.min(result, rotate(mval, i));
     }
     return result;
   }
 
-  public static int mirrorCode(int value) {
+  public int mirrorValue(int value) {
     int result = 0;
     for (int i = 0; i < 4; ++i) {
       result = (result << 1) | (value & 0x11111111);
@@ -25,7 +47,7 @@ public class ShapeOps {
     return result;
   }
 
-  public int rotateCode(int value, int steps) {
+  public int rotate(int value, int steps) {
     int lShift = steps & 0x3;
     int rShift = 4 - lShift;
     int mask = (0xf >>> rShift) * 0x11111111;
@@ -34,15 +56,15 @@ public class ShapeOps {
   }
 
   public int rotateRight(int value) {
-    return rotateCode(value, 1);
+    return rotate(value, 1);
   }
 
   public int rotate180(int value) {
-    return rotateCode(value, 2);
+    return rotate(value, 2);
   }
 
   public int rotateLeft(int value) {
-    return rotateCode(value, 3);
+    return rotate(value, 3);
   }
 
   public int cutLeft(int value) {
