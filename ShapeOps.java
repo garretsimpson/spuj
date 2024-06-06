@@ -1,17 +1,20 @@
 /**
  * ShapeOps
  */
-
 public class ShapeOps {
 
   public enum OPS {
-    ROTATE_RIGHT, ROTATE_180, ROTATE_LEFT, CUT_LEFT, CUT_RIGHT;
+    KEY, MIRROR, ROTATE_RIGHT, ROTATE_180, ROTATE_LEFT, CUT_LEFT, CUT_RIGHT;
 
     // Function<Integer, Integer> func;
   };
 
   public int call(OPS op, int... value) {
     switch (op) {
+    case KEY:
+      return keyValue(value[0]);
+    case MIRROR:
+      return mirrorValue(value[0]);
     case ROTATE_RIGHT:
       return rotateRight(value[0]);
     case ROTATE_180:
@@ -27,13 +30,18 @@ public class ShapeOps {
     }
   }
 
+  /* unsigned min() */
+  private int umin(int x, int y) {
+    return Integer.compareUnsigned(x, y) < 0 ? x : y;
+  }
+
   public int keyValue(int value) {
-    int mval = mirrorValue(value);
-    int result = Math.min(value, mval);
+    int mvalue = mirrorValue(value);
+    int result = umin(value, mvalue);
 
     for (int i = 1; i < 4; ++i) {
-      result = Math.min(result, rotate(value, i));
-      result = Math.min(result, rotate(mval, i));
+      result = umin(result, rotate(value, i));
+      result = umin(result, rotate(mvalue, i));
     }
     return result;
   }

@@ -1,7 +1,15 @@
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
+/**
+ * Shape
+ */
 public class Shape {
+
+  static final String ROCKET = "CbCuCbCu:Sr------:--CrSrCr:CwCwCwCw"; // 0xFE1F
+  static final String LOGO = "RuCw--Cw:----Ru--"; // 0x004B
+  static final String HALF_RECT = "RuRu----"; // 0x0003
+  static final String FULL_CIRC = "CuCuCuCu"; // 0x000F
 
   private static final int NUM_SPOTS = 16;
   private static final char CIRC = 'C';
