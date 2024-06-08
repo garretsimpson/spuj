@@ -1,3 +1,6 @@
+/**
+ * ShapeTests
+ */
 enum ShapeTests {
   T1("123") {},
   T2("Cu") {},
