@@ -4,45 +4,7 @@ import java.util.List;
 /**
  * Ops
  */
-public enum Ops {
-  KEY {
-    public int call(int... value) {
-      return keyValue(value[0]);
-    }
-  },
-  MIRROR {
-    public int call(int... value) {
-      return mirrorValue(value[0]);
-    }
-  },
-  ROTATE_RIGHT {
-    public int call(int... value) {
-      return rotate(value[0], 1);
-    }
-  },
-  ROTATE_180 {
-    public int call(int... value) {
-      return rotate(value[0], 2);
-    }
-  },
-  ROTATE_LEFT {
-    public int call(int... value) {
-      return rotate(value[0], 3);
-    }
-  },
-  CUT_RIGHT {
-    public int call(int... value) {
-      return cutRight(value[0]);
-    }
-  },
-  CUT_LEFT {
-    public int call(int... value) {
-      return cutLeft(value[0]);
-    }
-  };
-
-  public abstract int call(int... value);
-
+class Ops {
   /**
    * Unsigned min()
    * 
@@ -50,7 +12,7 @@ public enum Ops {
    * @param y
    * @return Integer value
    */
-  private int umin(int x, int y) {
+  private static int umin(int x, int y) {
     return Integer.compareUnsigned(x, y) < 0 ? x : y;
   }
 
@@ -60,7 +22,7 @@ public enum Ops {
    * @param value
    * @return Key value
    */
-  int keyValue(int value) {
+  static int keyValue(int value) {
     int mvalue = mirrorValue(value);
     int result = umin(value, mvalue);
 
@@ -77,7 +39,7 @@ public enum Ops {
    * @param value
    * @return Value of the shape's mirror image.
    */
-  int mirrorValue(int value) {
+  static int mirrorValue(int value) {
     int result = 0;
     for (int i = 0; i < 4; ++i) {
       result = (result << 1) | (value & 0x11111111);
@@ -93,7 +55,7 @@ public enum Ops {
    * @param steps
    * @return Value of the rotated shape
    */
-  int rotate(int value, int steps) {
+  static int rotate(int value, int steps) {
     int lShift = steps & 0x3;
     int rShift = 4 - lShift;
     int mask = (0xf >>> rShift) * 0x11111111;
@@ -109,7 +71,7 @@ public enum Ops {
    * @param layerNum starting layer number
    * @return
    */
-  int dropPart(int base, int part, int layerNum) {
+  private static int dropPart(int base, int part, int layerNum) {
     if (part == 0)
       return base;
     int v1 = Shape.v1(base);
@@ -133,7 +95,7 @@ public enum Ops {
    * @param layerNum starting layer number
    * @return
    */
-  int dropPin(int base, int quad, int layerNum) {
+  private static int dropPin(int base, int quad, int layerNum) {
     int pin = 1 << quad;
     int v1 = Shape.v1(base);
     int v2 = Shape.v2(base);
@@ -146,11 +108,11 @@ public enum Ops {
     return base | (Shape.PIN_MASK << quad);
   }
 
-  private static int[][] NEXT_SPOTS2 = { { 1, 4 }, { 0, 5 }, { 3, 6 }, { 2, 7 }, { 0, 5, 8 }, { 1, 4, 9 }, { 2, 7, 10 },
+  private static final int[][] NEXT_SPOTS2 = { { 1, 4 }, { 0, 5 }, { 3, 6 }, { 2, 7 }, { 0, 5, 8 }, { 1, 4, 9 }, { 2, 7, 10 },
       { 3, 6, 11 }, { 4, 9, 12 }, { 5, 8, 13 }, { 6, 11, 14 }, { 7, 10, 15 }, { 8, 13 }, { 9, 12 }, { 10, 15 },
       { 11, 14 }, };
 
-  private static int[][] NEXT_SPOTS4 = { { 1, 3, 4 }, { 0, 2, 5 }, { 1, 3, 6 }, { 0, 2, 7 }, { 0, 5, 7, 8 },
+  private static final int[][] NEXT_SPOTS4 = { { 1, 3, 4 }, { 0, 2, 5 }, { 1, 3, 6 }, { 0, 2, 7 }, { 0, 5, 7, 8 },
       { 1, 4, 6, 9 }, { 2, 5, 7, 10 }, { 3, 4, 6, 11 }, { 4, 9, 11, 12 }, { 5, 8, 10, 13 }, { 6, 9, 11, 14 },
       { 7, 8, 10, 15 }, {}, {}, {}, {}, };
 
@@ -160,7 +122,7 @@ public enum Ops {
    * @param mesh
    * @return
    */
-  int findCrystals(int shape, List<Integer> todo, int[][] mesh) {
+  private static int findCrystals(int shape, List<Integer> todo, int[][] mesh) {
     int result = 0;
     int num, val;
     for (int i = 0; i < todo.size(); ++i) {
@@ -184,11 +146,12 @@ public enum Ops {
    * @param quads
    * @return
    */
-  int collapseS2(int shape, int[] quads) {
+  private static int collapse(int shape, int[] quads) {
     int part, val;
 
     // First layer remains unchanged
     int result = shape & Shape.LAYER_MASK;
+    // int[] layerNums = new int[]{1, 2, 3};
     for (int layerNum = 1; layerNum < 4; ++layerNum) {
       part = (shape >>> (4 * layerNum)) & Shape.LAYER_MASK;
       if (part == 0)
@@ -222,17 +185,16 @@ public enum Ops {
         prevLayer = (result >>> (4 * (layerNum - 1))) & Shape.LAYER_MASK;
         v1 = Shape.v1(prevLayer);
         v2 = Shape.v2(prevLayer);
-        boolean supported = (part & 0xffff & (v1 | v2)) != 0;
+        boolean supported = (part1 & 0xffff & (v1 | v2)) != 0;
         if (supported) {
           // copy part
-          result |= part << (4 * layerNum);
+          result |= part1 << (4 * layerNum);
         } else {
           // break crystals
-          v1 = Shape.v1(part);
-          v2 = Shape.v2(part);
+          v2 = Shape.v2(part1);
           part &= ~(v2 * Shape.CRYSTAL_MASK);
           // drop part
-          result = dropPart(result, part, layerNum);
+          result = dropPart(result, part1, layerNum);
         }
       }
     }
@@ -263,12 +225,16 @@ public enum Ops {
   // return collapseS2(shape & 0xcccccccc, [2, 3]) >>> 0;
   // }
 
-  int cutRight(int value) {
+  static int cutRight(int value) {
     return value & 0x33333333;
   }
 
-  int cutLeft(int value) {
+  static int cutLeft(int value) {
     return value & 0xcccccccc;
+  }
+
+  static int stack(int value1, int value2) {
+    return value1 & value2;
   }
 
 }
