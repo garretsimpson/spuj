@@ -1,7 +1,5 @@
-import java.util.regex.Pattern;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Shape
@@ -18,6 +16,7 @@ public class Shape {
   public static final int CRYSTAL_MASK = 0x00010001;
   public static final int LAYER_MASK = 0x000f000f;
 
+  private static final int NUM_LAYERS = 4;
   private static final int NUM_SPOTS = 16;
   private static final char CIRC = 'C';
   private static final char RECT = 'R';
@@ -154,17 +153,17 @@ public class Shape {
 
   /**
    * Returns an array of shapes, layers from bottom to top
-   * @param  code
-   * @returns
+   * 
+   * @param code
+   * @return
    */
-  public static List<Integer> toLayers(int value) {
-    List<Integer> result = new ArrayList<>();
+  public static int[] toLayers(int value) {
+    int[] result = new int[NUM_LAYERS];
     int v1 = v1(value);
     int v2 = v2(value);
-    for (int i = 0; i < 4; ++i) {
-      if ((v1 | v2) == 0) break;
+    for (int i = 0; i < NUM_LAYERS; ++i) {
       value = ((v2 & 0xf) << 4) | (v1 & 0xf);
-      result.add(value);
+      result[i] = value;
       v1 >>>= 4;
       v2 >>>= 4;
     }

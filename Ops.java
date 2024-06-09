@@ -63,6 +63,18 @@ class Ops {
     return result;
   }
 
+  static int rotateRight(int value) {
+    return rotate(value, 1);
+  }
+
+  static int rotate180(int value) {
+    return rotate(value, 2);
+  }
+
+  static int rotateLeft(int value) {
+    return rotate(value, 3);
+  }
+
   /**
    * Drop a part on top of a shape. The part is assumed to be a single solid part that won't separate.
    * 
@@ -108,9 +120,9 @@ class Ops {
     return base | (Shape.PIN_MASK << quad);
   }
 
-  private static final int[][] NEXT_SPOTS2 = { { 1, 4 }, { 0, 5 }, { 3, 6 }, { 2, 7 }, { 0, 5, 8 }, { 1, 4, 9 }, { 2, 7, 10 },
-      { 3, 6, 11 }, { 4, 9, 12 }, { 5, 8, 13 }, { 6, 11, 14 }, { 7, 10, 15 }, { 8, 13 }, { 9, 12 }, { 10, 15 },
-      { 11, 14 }, };
+  private static final int[][] NEXT_SPOTS2 = { { 1, 4 }, { 0, 5 }, { 3, 6 }, { 2, 7 }, { 0, 5, 8 }, { 1, 4, 9 },
+      { 2, 7, 10 }, { 3, 6, 11 }, { 4, 9, 12 }, { 5, 8, 13 }, { 6, 11, 14 }, { 7, 10, 15 }, { 8, 13 }, { 9, 12 },
+      { 10, 15 }, { 11, 14 }, };
 
   private static final int[][] NEXT_SPOTS4 = { { 1, 3, 4 }, { 0, 2, 5 }, { 1, 3, 6 }, { 0, 2, 7 }, { 0, 5, 7, 8 },
       { 1, 4, 6, 9 }, { 2, 5, 7, 10 }, { 3, 4, 6, 11 }, { 4, 9, 11, 12 }, { 5, 8, 10, 13 }, { 6, 9, 11, 14 },
@@ -192,7 +204,7 @@ class Ops {
         } else {
           // break crystals
           v2 = Shape.v2(part1);
-          part &= ~(v2 * Shape.CRYSTAL_MASK);
+          part1 &= ~(v2 * Shape.CRYSTAL_MASK);
           // drop part
           result = dropPart(result, part1, layerNum);
         }
@@ -201,37 +213,53 @@ class Ops {
     return result;
   }
 
-  /**
-   * @param shape
-   * @return
-   */
-  // static int cutLeft(int shape) {
-  // List<Integer> layers = Shape.toLayers(shape);
-  // // Step 1: break all cut crystals
-  // // Check all 8 places that a crystal can span the cut
-  // int layer;
-  // List<Integer> todo = new ArrayList<>();
-  // for (int layerNum = 0; layerNum < layers.size(); ++layerNum) {
-  // layer = layers[layerNum];
-  // if ((layer & 0x99) == 0x99) todo.add(4 * layerNum + 3);
-  // if ((layer & 0x66) == 0x66) todo.add(4 * layerNum + 2);
-  // }
-  // // Find all connected crystals
-  // int found = findCrystals(shape, todo, NEXT_SPOTS2);
-  // // Break all connected crystals
-  // shape &= ~found;
+  static int cutRight(int shape) {
+    int[] layers = Shape.toLayers(shape);
+    // Step 1: break all cut crystals
+    // Check all 8 places that a crystal can span the cut
+    int layer;
+    List<Integer> todo = new ArrayList<>();
+    for (int layerNum = 0; layerNum < layers.length; ++layerNum) {
+      layer = layers[layerNum];
+      if ((layer & 0x99) == 0x99)
+        todo.add(4 * layerNum + 0);
+      if ((layer & 0x66) == 0x66)
+        todo.add(4 * layerNum + 1);
+    }
+    // Find all connected crystals
+    int found = findCrystals(shape, todo, NEXT_SPOTS2);
+    // Break all connected crystals
+    shape &= ~found;
 
-  // // Step 2: COllapse parts
-  // return collapseS2(shape & 0xcccccccc, [2, 3]) >>> 0;
-  // }
-
-  static int cutRight(int value) {
-    return value & 0x33333333;
+    // Step 2: Collapse parts
+    return collapse(shape & 0x33333333, new int[] { 0, 1 }) >>> 0;
   }
 
-  static int cutLeft(int value) {
-    return value & 0xcccccccc;
+  static int cutLeft(int shape) {
+    int[] layers = Shape.toLayers(shape);
+    // Step 1: break all cut crystals
+    // Check all 8 places that a crystal can span the cut
+    int layer;
+    List<Integer> todo = new ArrayList<>();
+    for (int layerNum = 0; layerNum < layers.length; ++layerNum) {
+      layer = layers[layerNum];
+      if ((layer & 0x99) == 0x99)
+        todo.add(4 * layerNum + 3);
+      if ((layer & 0x66) == 0x66)
+        todo.add(4 * layerNum + 2);
+    }
+    // Find all connected crystals
+    int found = findCrystals(shape, todo, NEXT_SPOTS2);
+    // Break all connected crystals
+    shape &= ~found;
+
+    // Step 2: COllapse parts
+    return collapse(shape & 0xcccccccc, new int[] { 2, 3 }) >>> 0;
   }
+
+  // static int cutLeft(int value) {
+  // return value & 0xcccccccc;
+  // }
 
   static int stack(int value1, int value2) {
     return value1 & value2;
