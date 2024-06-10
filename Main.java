@@ -14,6 +14,7 @@ public class Main {
 
     ShapeTests.run();
     OpTests.run();
+    Tests.run();
   }
 
 }

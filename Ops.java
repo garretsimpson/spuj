@@ -154,6 +154,28 @@ class Ops {
     return result;
   }
 
+  private static int findCrystals_new(int shape, List<Integer> todo, int[][] mesh) {
+    int result = 0;
+    int num, val;
+    boolean[] todo2 = new boolean[16];
+    for (int i = 0; i < todo.size(); ++i)
+      todo2[todo.get(i)] = true;
+    for (int i = 0; i < todo.size(); ++i) {
+      num = todo.get(i);
+      result |= Shape.CRYSTAL_MASK << num;
+      for (int spot : mesh[num]) {
+        if (todo2[spot])
+          continue;
+        val = (shape >>> spot) & Shape.CRYSTAL_MASK;
+        if (val == Shape.CRYSTAL_MASK) {
+          todo.add(spot);
+          todo2[spot] = true;
+        }
+      }
+    }
+    return result;
+  }
+
   /**
    * TODO: Use spot number instead of layers and quads.
    * 

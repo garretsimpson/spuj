@@ -1,0 +1,7 @@
+Implemented shape ops in Java
+
+Running random shapes to test performance
+
+Found this...
+cutRight(dafd8739) => 00100001
+Is this correct? Yes it is!
