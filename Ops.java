@@ -22,15 +22,15 @@ class Ops {
   /**
    * Compute the shape's key value.
    * 
-   * @param value
+   * @param shape
    * @return Key value
    */
-  static int keyValue(int value) {
-    int mvalue = mirrorValue(value);
-    int result = umin(value, mvalue);
+  static int keyValue(int shape) {
+    int mvalue = mirrorValue(shape);
+    int result = umin(shape, mvalue);
 
     for (int i = 1; i < 4; ++i) {
-      result = umin(result, rotate(value, i));
+      result = umin(result, rotate(shape, i));
       result = umin(result, rotate(mvalue, i));
     }
     return result;
@@ -39,14 +39,14 @@ class Ops {
   /**
    * Compute the value of the shape's mirror image.
    * 
-   * @param value
+   * @param shape
    * @return Value of the shape's mirror image.
    */
-  static int mirrorValue(int value) {
+  static int mirrorValue(int shape) {
     int result = 0;
     for (int i = 0; i < 4; ++i) {
-      result = (result << 1) | (value & 0x11111111);
-      value >>>= 1;
+      result = (result << 1) | (shape & 0x11111111);
+      shape >>>= 1;
     }
     return result;
   }
@@ -54,28 +54,28 @@ class Ops {
   /**
    * Rotate the shape to the right a given number of steps.
    * 
-   * @param value
+   * @param shape
    * @param steps
    * @return Value of the rotated shape
    */
-  static int rotate(int value, int steps) {
+  static int rotate(int shape, int steps) {
     int lShift = steps & 0x3;
     int rShift = 4 - lShift;
     int mask = (0xf >>> rShift) * 0x11111111;
-    int result = ((value >>> rShift) & mask) | ((value << lShift) & ~mask);
+    int result = ((shape >>> rShift) & mask) | ((shape << lShift) & ~mask);
     return result;
   }
 
-  static int rotateRight(int value) {
-    return rotate(value, 1);
+  static int rotateRight(int shape) {
+    return rotate(shape, 1);
   }
 
-  static int rotate180(int value) {
-    return rotate(value, 2);
+  static int rotate180(int shape) {
+    return rotate(shape, 2);
   }
 
-  static int rotateLeft(int value) {
-    return rotate(value, 3);
+  static int rotateLeft(int shape) {
+    return rotate(shape, 3);
   }
 
   /**
@@ -235,7 +235,7 @@ class Ops {
     shape &= ~found;
 
     // Step 2: Collapse parts
-    return collapse(shape & 0xcccccccc, new int[] { 2, 3 }) >>> 0;
+    return collapse(shape & 0xcccccccc, new int[] { 2, 3 });
   }
 
   static int cutRight(int shape) {
@@ -257,7 +257,7 @@ class Ops {
     shape &= ~found;
 
     // Step 2: Collapse parts
-    return collapse(shape & 0x33333333, new int[] { 0, 1 }) >>> 0;
+    return collapse(shape & 0x33333333, new int[] { 0, 1 });
   }
 
   static int pinPush(int shape) {
@@ -296,9 +296,9 @@ class Ops {
     return shape;
   }
 
-  static int crystal(int value) {
-    int result = value;
-    int[] layers = Shape.toLayers(value);
+  static int crystal(int shape) {
+    int result = shape;
+    int[] layers = Shape.toLayers(shape);
     // pins and voids become crystals
     int val;
     for (int layerNum = 0; layerNum < layers.length; ++layerNum) {
@@ -367,7 +367,7 @@ class Ops {
       if ((v1 | v2) >= 1 << (4 * MAX_LAYERS))
         return 0;
     }
-    return bottom >>> 0;
+    return bottom;
   }
 
 }
