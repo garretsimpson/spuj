@@ -3,6 +3,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.Random;
+import java.util.function.IntBinaryOperator;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -23,7 +24,7 @@ public class Tests {
 
   static void perf1() {
     final int ROUNDS = 20;
-    final int ITERS = 1000000;
+    final int ITERS = 10000000;
     int[] rounds = new int[ROUNDS];
     String name = "pinPush";
     IntUnaryOperator func = Ops::pinPush;
@@ -31,7 +32,7 @@ public class Tests {
     int[] times = IntStream.of(rounds).map((x) -> Tests.opPerf(name, func, ITERS)).toArray();
     OptionalInt totalTime = IntStream.of(times).reduce((a, b) -> a + b);
     double aveTime = 1f * totalTime.getAsInt() / ROUNDS;
-    System.out.printf("average time: %.2f, %.2f MOPS\n", aveTime, 1000f / aveTime);
+    System.out.printf("average time: %.2f, %.2f MOPS\n", aveTime, 1f * ITERS / 1000 / aveTime);
   }
 
   static int opPerf(String name, IntUnaryOperator func, int iters) {
