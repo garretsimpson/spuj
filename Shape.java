@@ -16,7 +16,7 @@ public class Shape {
   public static final int CRYSTAL_MASK = 0x00010001;
   public static final int LAYER_MASK = 0x000f000f;
 
-  private static final int NUM_LAYERS = 4;
+  public static final int NUM_LAYERS = 4;
   private static final int NUM_SPOTS = 16;
   private static final char CIRC = 'C';
   private static final char RECT = 'R';

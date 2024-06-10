@@ -5,6 +5,9 @@ import java.util.List;
  * Ops
  */
 class Ops {
+
+  private static int MAX_LAYERS = 4;
+
   /**
    * Unsigned min()
    * 
@@ -213,6 +216,28 @@ class Ops {
     return result;
   }
 
+  static int cutLeft(int shape) {
+    int[] layers = Shape.toLayers(shape);
+    // Step 1: break all cut crystals
+    // Check all 8 places that a crystal can span the cut
+    int layer;
+    List<Integer> todo = new ArrayList<>();
+    for (int layerNum = 0; layerNum < layers.length; ++layerNum) {
+      layer = layers[layerNum];
+      if ((layer & 0x99) == 0x99)
+        todo.add(4 * layerNum + 3);
+      if ((layer & 0x66) == 0x66)
+        todo.add(4 * layerNum + 2);
+    }
+    // Find all connected crystals
+    int found = findCrystals(shape, todo, NEXT_SPOTS2);
+    // Break all connected crystals
+    shape &= ~found;
+
+    // Step 2: Collapse parts
+    return collapse(shape & 0xcccccccc, new int[] { 2, 3 }) >>> 0;
+  }
+
   static int cutRight(int shape) {
     int[] layers = Shape.toLayers(shape);
     // Step 1: break all cut crystals
@@ -235,34 +260,114 @@ class Ops {
     return collapse(shape & 0x33333333, new int[] { 0, 1 }) >>> 0;
   }
 
-  static int cutLeft(int shape) {
-    int[] layers = Shape.toLayers(shape);
+  static int pinPush(int shape) {
     // Step 1: break all cut crystals
-    // Check all 8 places that a crystal can span the cut
-    int layer;
+    // Check all 4 places that a crystal can span the cut
     List<Integer> todo = new ArrayList<>();
-    for (int layerNum = 0; layerNum < layers.length; ++layerNum) {
-      layer = layers[layerNum];
-      if ((layer & 0x99) == 0x99)
-        todo.add(4 * layerNum + 3);
-      if ((layer & 0x66) == 0x66)
-        todo.add(4 * layerNum + 2);
+    int spot1, spot2;
+    for (int spot = 8; spot < 12; ++spot) {
+      // check for crystal at spot and the spot directly above it
+      spot1 = (shape >>> spot) & Shape.CRYSTAL_MASK;
+      spot2 = (shape >>> (spot + 4)) & Shape.CRYSTAL_MASK;
+      if (spot1 == Shape.CRYSTAL_MASK && spot2 == Shape.CRYSTAL_MASK) {
+        todo.add(spot);
+      }
     }
     // Find all connected crystals
-    int found = findCrystals(shape, todo, NEXT_SPOTS2);
+    int found = findCrystals(shape, todo, NEXT_SPOTS4);
     // Break all connected crystals
     shape &= ~found;
 
-    // Step 2: COllapse parts
-    return collapse(shape & 0xcccccccc, new int[] { 2, 3 }) >>> 0;
+    // Step 2: Raise shape and add pins
+    int v1 = Shape.v1(shape);
+    int v2 = Shape.v2(shape);
+    shape = ((v1 | v2) & 0xf) * Shape.PIN_MASK;
+    shape |= (v2 << 20) | ((v1 & 0x0fff) << 4);
+
+    // Step 3: Collapse parts
+    shape = collapse(shape, new int[] { 0, 1, 2, 3 });
+
+    if (MAX_LAYERS != Shape.NUM_LAYERS) {
+      v1 = Shape.v1(shape);
+      v2 = Shape.v2(shape);
+      if ((v1 | v2) >= 1 << (4 * MAX_LAYERS))
+        return 0;
+    }
+    return shape;
   }
 
-  // static int cutLeft(int value) {
-  // return value & 0xcccccccc;
-  // }
+  static int crystal(int value) {
+    int result = value;
+    int[] layers = Shape.toLayers(value);
+    // pins and voids become crystals
+    int val;
+    for (int layerNum = 0; layerNum < layers.length; ++layerNum) {
+      val = layers[layerNum];
+      if (val == 0)
+        break;
+      val = 0x0f - (val & 0x0f);
+      result |= (val << (4 * layerNum)) * Shape.CRYSTAL_MASK;
+    }
+    return result;
+  }
 
-  static int stack(int value1, int value2) {
-    return value1 & value2;
+  static int swapLeft(int left, int right) {
+    int leftHalf = cutLeft(right);
+    int rightHalf = cutRight(left);
+    return leftHalf | rightHalf;
+  }
+
+  static int swapRight(int left, int right) {
+    int leftHalf = cutLeft(left);
+    int rightHalf = cutRight(right);
+    return leftHalf | rightHalf;
+  }
+
+  static int stack(int top, int bottom) {
+    int val;
+    int[] layers = Shape.toLayers(top);
+    for (int part : layers) {
+      if (part == 0)
+        break;
+      for (int quad = 0; quad < 4; ++quad) {
+        val = (part >>> quad) & 0x11;
+        if (val == 0x10) {
+          // drop pin
+          part &= ~(0x10 << quad);
+          bottom = dropPin(bottom, quad, 4);
+        } else if (val == 0x11) {
+          // break crystal
+          part &= ~(0x11 << quad);
+        }
+      }
+      // check only solids remain
+      if (part > 0xf) {
+        System.out.println("Stacking error.  Non solid part found.");
+        return 0;
+      }
+      // find all parts
+      List<Integer> parts = new ArrayList<>();
+      if (part == 0x5) {
+        parts.add(0x1);
+        parts.add(0x4);
+      } else if (part == 0xa) {
+        parts.add(0x2);
+        parts.add(0x8);
+      } else {
+        parts.add(part);
+      }
+      // drop parts
+      for (int part1 : parts) {
+        bottom = dropPart(bottom, part1, 4);
+      }
+    }
+    if (MAX_LAYERS != Shape.NUM_LAYERS) {
+      int v1 = Shape.v1(bottom);
+      int v2 = Shape.v2(bottom);
+      if ((v1 | v2) >= 1 << (4 * MAX_LAYERS))
+        return 0;
+    }
+    return bottom >>> 0;
   }
 
 }
