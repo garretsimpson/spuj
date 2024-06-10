@@ -3,7 +3,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.Random;
-import java.util.function.IntBinaryOperator;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -24,22 +23,22 @@ public class Tests {
 
   static void perf1() {
     final int ROUNDS = 20;
-    final int ITERS = 10000000;
-    int[] rounds = new int[ROUNDS];
+    final int ITERS = 100000000;
     String name = "pinPush";
     IntUnaryOperator func = Ops::pinPush;
 
-    int[] times = IntStream.of(rounds).map((x) -> Tests.opPerf(name, func, ITERS)).toArray();
+    int[] times = IntStream.range(0, ROUNDS).map((x) -> Tests.opPerf(name, func, ITERS)).toArray();
     OptionalInt totalTime = IntStream.of(times).reduce((a, b) -> a + b);
     double aveTime = 1f * totalTime.getAsInt() / ROUNDS;
-    System.out.printf("average time: %.2f, %.2f MOPS\n", aveTime, 1f * ITERS / 1000 / aveTime);
+    double mops = 1f * ITERS / 1000 / aveTime;
+    System.out.printf("average time: %.2f, %.2f MOPS\n", aveTime, mops);
   }
 
   static int opPerf(String name, IntUnaryOperator func, int iters) {
     Random rng = new Random();
     int[] values = rng.ints(iters).toArray();
     long before = new Date().getTime();
-    int[] results = IntStream.of(values).map(func).toArray();
+    int[] results = IntStream.of(values).parallel().map(func).toArray();
     long after = new Date().getTime();
     int delta = (int) (after - before);
 

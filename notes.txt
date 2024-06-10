@@ -5,3 +5,26 @@ Running random shapes to test performance
 Found this...
 cutRight(dafd8739) => 00100001
 Is this correct? Yes it is!
+
+pinPush(83d063f0) => 00000002
+code: --------:cgRgcgcg:cbcb----:--RwRwP-, value: 83d063f0
+It has an gap layer, so this is an invalid shape.
+But if it was pin pushed...
+- the 4th layer would disapear
+- all the cystals would break as they fall because of the gap layer
+- no pins would be added because the gap is on the bottom layer
+The only part left would be --Rg----, which is 0002
+
+Performance testing
+
+ROUNDS = 20, ITERS = 10M
+1279 pinPush(e3099407) => 039f0470
+average time: 1289.75, 7.75 MOPS
+
+Running a Stream in parallel is super easy...
+    int[] results = IntStream.of(values).parallel().map(func).toArray();
+I get over 5x improvement (for 16 virtual cores).
+
+ROUNDS = 20, ITERS = 100M
+2332 pinPush(5f23b97c) => 623f07c0
+average time: 2353.90, 42.48 MOPS
