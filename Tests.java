@@ -22,7 +22,7 @@ public class Tests {
   }
 
   static void perf1() {
-    final int ROUNDS = 20;
+    final int ROUNDS = 10;
     final int ITERS = 100000000;
     String name = "pinPush";
     IntUnaryOperator func = Ops::pinPush;

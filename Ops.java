@@ -6,8 +6,6 @@ import java.util.List;
  */
 class Ops {
 
-  private static int MAX_LAYERS = 4;
-
   /**
    * Unsigned min()
    * 
@@ -309,12 +307,6 @@ class Ops {
     // Step 3: Collapse parts
     shape = collapse(shape, new int[] { 0, 1, 2, 3 });
 
-    if (MAX_LAYERS != Shape.NUM_LAYERS) {
-      v1 = Shape.v1(shape);
-      v2 = Shape.v2(shape);
-      if ((v1 | v2) >= 1 << (4 * MAX_LAYERS))
-        return 0;
-    }
     return shape;
   }
 
@@ -382,12 +374,6 @@ class Ops {
       for (int part1 : parts) {
         bottom = dropPart(bottom, part1, 4);
       }
-    }
-    if (MAX_LAYERS != Shape.NUM_LAYERS) {
-      int v1 = Shape.v1(bottom);
-      int v2 = Shape.v2(bottom);
-      if ((v1 | v2) >= 1 << (4 * MAX_LAYERS))
-        return 0;
     }
     return bottom;
   }

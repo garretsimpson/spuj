@@ -11,6 +11,13 @@ public class Shape {
   static final String HALF_RECT = "RuRu----"; // 0x0003
   static final String FULL_CIRC = "CuCuCuCu"; // 0x000F
 
+  static final int[] FLAT_1 = { 0x1, 0x2, 0x4, 0x8 };
+  static final int[] FLAT_2 = { 0x3, 0x5, 0x6, 0x9, 0xa, 0xc };
+  static final int[] FLAT_3 = { 0x7, 0xb, 0xd, 0xe };
+  static final int[] FLAT_4 = { 0xf };
+
+  static final int[] PIN_1 = { 0x10000, 0x20000, 0x40000, 0x80000 };
+
   public static final int PIN_MASK = 0x00010000;
   public static final int SOLID_MASK = 0x00000001;
   public static final int CRYSTAL_MASK = 0x00010001;

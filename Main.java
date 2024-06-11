@@ -12,9 +12,12 @@ public class Main {
     System.out.println(new Date());
     System.out.println();
 
-    ShapeTests.run();
-    OpTests.run();
-    Tests.run();
+    // ShapeTests.run();
+    // OpTests.run();
+    // Tests.run();
+
+    Constructor c = new Constructor();
+    c.run();
   }
 
 }
