@@ -17,6 +17,7 @@ public class Shape {
   static final int[] FLAT_4 = { 0xf };
 
   static final int[] PIN_1 = { 0x10000, 0x20000, 0x40000, 0x80000 };
+  static final int[] PIN_4 = { 0xf0000 };
 
   public static final int PIN_MASK = 0x00010000;
   public static final int SOLID_MASK = 0x00000001;
