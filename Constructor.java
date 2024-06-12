@@ -46,10 +46,12 @@ public class Constructor {
   }
 
   private boolean isNew(int shape) {
-    return (shape != 0) && !allShapes.contains(shape);
+    return !allShapes.contains(shape);
   }
 
   private boolean maxLayers(int shape) {
+    if (shape == 0)
+      return false;
     int v1 = Shape.v1(shape);
     int v2 = Shape.v2(shape);
     return (v1 | v2) < (1 << (4 * MAX_LAYERS));
@@ -88,7 +90,8 @@ public class Constructor {
     // TODO: Not sure where parallel() should go.
     // mapMulti() returns a sequential stream.
     // distict() is probably expensive. Might be able to just add the values.
-    IntStream stream = streams.parallelStream().flatMapToInt(s -> s).filter(this::isNew).filter(this::maxLayers)
+    // TODO: try changing the order of these filters.
+    IntStream stream = streams.parallelStream().flatMapToInt(s -> s).filter(this::maxLayers).filter(this::isNew)
         .distinct();
     return stream.toArray();
   }
