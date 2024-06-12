@@ -12,17 +12,20 @@ import java.util.stream.IntStream;
  */
 public class Constructor {
   private static final int MAX_ITERS = 20;
-  private static final int MAX_LAYERS = 1;
+  private static final int MAX_LAYERS = 2;
 
   private Set<Integer> allShapes = new HashSet<>();
 
   private IntStream allShapeStream() {
-    return allShapes.stream().mapToInt(Integer::intValue);
+    return allShapes.parallelStream().mapToInt(Integer::intValue);
   }
 
-  private static final IntUnaryOperator[] ONE_OPS = { Ops::rotateRight, Ops::rotate180, Ops::rotateLeft, Ops::cutLeft,
-      Ops::cutRight, Ops::pinPush, Ops::crystal };
-  private static final IntBinaryOperator[] TWO_OPS = { Ops::swapLeft, Ops::swapRight, Ops::stack };
+  // private static final IntUnaryOperator[] ONE_OPS = { Ops::rotateRight, Ops::rotate180, Ops::rotateLeft,
+  // Ops::cutLeft,
+  // Ops::cutRight, Ops::pinPush, Ops::crystal };
+  // private static final IntBinaryOperator[] TWO_OPS = { Ops::swapLeft, Ops::swapRight, Ops::stack };
+  private static final IntUnaryOperator[] ONE_OPS = { Ops::rotateRight, Ops::cutRight, Ops::pinPush, Ops::crystal };
+  private static final IntBinaryOperator[] TWO_OPS = { Ops::fastSwapRight, Ops::fastStack };
 
   private void displayShapes(int[] shapes) {
     for (int shape : shapes) {
@@ -62,7 +65,7 @@ public class Constructor {
 
     System.out.printf("ONE_OPS %d %d > %d\n", ONE_OPS.length, input.length, 1l * ONE_OPS.length * input.length);
     for (IntUnaryOperator op : ONE_OPS) {
-      streams.add(IntStream.of(input).map(op));
+      streams.add(IntStream.of(input).parallel().map(op));
     }
 
     /* TODO: Add pre-filters for each op. */
@@ -85,7 +88,7 @@ public class Constructor {
     // TODO: Not sure where parallel() should go.
     // mapMulti() returns a sequential stream.
     // distict() is probably expensive. Might be able to just add the values.
-    IntStream stream = streams.stream().flatMapToInt(s -> s).parallel().filter(this::isNew).filter(this::maxLayers)
+    IntStream stream = streams.parallelStream().flatMapToInt(s -> s).filter(this::isNew).filter(this::maxLayers)
         .distinct();
     return stream.toArray();
   }

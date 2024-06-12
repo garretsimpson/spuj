@@ -337,6 +337,24 @@ class Ops {
     return leftHalf | rightHalf;
   }
 
+  private static boolean isLeftHalf(int shape) {
+    int v1 = Shape.v1(shape);
+    int v2 = Shape.v2(shape);
+    return ((v1 | v2) & 0x3333) == 0;
+  }
+
+  private static boolean isRightHalf(int shape) {
+    int v1 = Shape.v1(shape);
+    int v2 = Shape.v2(shape);
+    return ((v1 | v2) & 0xcccc) == 0;
+  }
+
+  static int fastSwapRight(int left, int right) {
+    if (!isLeftHalf(left) || !isRightHalf(right))
+      return 0;
+    return left | right;
+  }
+
   static int stack(int top, int bottom) {
     int val;
     int[] layers = Shape.toLayers(top);
@@ -376,6 +394,18 @@ class Ops {
       }
     }
     return bottom;
+  }
+
+  /**
+   * fastStack
+   * 
+   * Only call stack() when the top layer is 1-layer.
+   */
+  static int fastStack(int top, int bottom) {
+    int top1 = top & Shape.LAYER_MASK;
+    if (top1 != top)
+      return 0;
+    return stack(top1, bottom);
   }
 
 }

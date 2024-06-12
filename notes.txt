@@ -172,3 +172,34 @@ DONE
 
 Number: 35280
 Time: 131512
+
+Reduced the list of Ops used, and the time went from 130 to 85 seconds.
+  private static final IntUnaryOperator[] ONE_OPS = { Ops::rotateRight, Ops::cutRight, Ops::pinPush, Ops::crystal };
+  private static final IntBinaryOperator[] TWO_OPS = { Ops::swapRight, Ops::stack };
+
+Number: 35280
+Time: 84936
+
+swapRight is two cuts...
+  static int swapRight(int left, int right) {
+    int leftHalf = cutLeft(left);
+    int rightHalf = cutRight(right);
+    return leftHalf | rightHalf;
+  }
+
+Implemented fastSwapRight()...
+
+Number: 35280
+Time: 47195
+
+Time is now 47.
+
+Implemented fastStack() where only the bottom layer of the top shape is passed.
+
+Number: 35280
+Time: 22049
+
+Modified fastStack() to return when the top is not 1-layer.
+
+Number: 35280
+Time: 4305
