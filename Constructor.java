@@ -1,6 +1,4 @@
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -13,10 +11,8 @@ import java.util.stream.IntStream;
  * Finder
  */
 public class Constructor {
+  private static final int MAX_ITERS = 20;
   private static final int MAX_LAYERS = 1;
-
-  /* TODO: BitSet does not handle negative indexes, so it's not useful for sizes > MAXINT/2 */
-  // private BitSet allShapes = new BitSet();
 
   private Set<Integer> allShapes = new HashSet<>();
 
@@ -24,7 +20,6 @@ public class Constructor {
     return allShapes.stream().mapToInt(Integer::intValue);
   }
 
-  /* TODO: Add pre-filters for each op. E.g. stack only one-layer, non-crystal shapes and swap only half shapes. */
   private static final IntUnaryOperator[] ONE_OPS = { Ops::rotateRight, Ops::rotate180, Ops::rotateLeft, Ops::cutLeft,
       Ops::cutRight, Ops::pinPush, Ops::crystal };
   private static final IntBinaryOperator[] TWO_OPS = { Ops::swapLeft, Ops::swapRight, Ops::stack };
@@ -32,6 +27,17 @@ public class Constructor {
   private void displayShapes(int[] shapes) {
     for (int shape : shapes) {
       System.out.println(new Shape(shape));
+    }
+    System.out.println();
+  }
+
+  private void displayAllShapes() {
+    int shape;
+    System.out.println("All shapes");
+    for (long i = 0; i <= 0xffffffffl; ++i) {
+      shape = (int) i;
+      if (allShapes.contains(shape))
+        System.out.println(new Shape(shape));
     }
     System.out.println();
   }
@@ -52,36 +58,50 @@ public class Constructor {
    * Given a list of starting shapes, find the shapes that can be made by performing all operations.
    */
   int[] makeShapes(int[] input) {
-    IntStream stream = IntStream.empty().parallel();
+    List<IntStream> streams = new ArrayList<>();
 
-    System.out.printf("ONE_OPS %d %d > %d\n", ONE_OPS.length, input.length, ONE_OPS.length * input.length);
-    for (IntUnaryOperator op : ONE_OPS)
-      stream = IntStream.concat(stream, IntStream.of(input).map(op));
-
-    System.out.printf("TWO_OPS %d %d %d > %d\n", TWO_OPS.length, allShapes.size(), input.length,
-        2 * TWO_OPS.length * allShapes.size() * input.length);
-    for (IntBinaryOperator op : TWO_OPS) {
-      for (int s1 : input) {
-        stream = IntStream.concat(stream, allShapeStream().map(s2 -> op.applyAsInt(s1, s2)));
-        stream = IntStream.concat(stream, allShapeStream().filter(s2 -> s1 != s2).map(s2 -> op.applyAsInt(s2, s1)));
-      }
+    System.out.printf("ONE_OPS %d %d > %d\n", ONE_OPS.length, input.length, 1l * ONE_OPS.length * input.length);
+    for (IntUnaryOperator op : ONE_OPS) {
+      streams.add(IntStream.of(input).map(op));
     }
 
-    stream = stream.filter(this::isNew).filter(this::maxLayers).distinct();
+    /* TODO: Add pre-filters for each op. */
+    /* For example, swap only half shapes and stack only one-layer, non-crystal shapes. */
+    System.out.printf("TWO_OPS %d %d %d > %d\n", TWO_OPS.length, input.length, allShapes.size(),
+        2l * TWO_OPS.length * input.length * allShapes.size());
+    for (IntBinaryOperator op : TWO_OPS) {
+      streams.add(allShapeStream().mapMulti((s1, consumer) -> {
+        for (int s2 : input) {
+          consumer.accept(op.applyAsInt(s1, s2));
+        }
+      }));
+      streams.add(allShapeStream().mapMulti((s1, consumer) -> {
+        for (int s2 : input) {
+          consumer.accept(op.applyAsInt(s2, s1));
+        }
+      }));
+    }
+
+    // TODO: Not sure where parallel() should go.
+    // mapMulti() returns a sequential stream.
+    // distict() is probably expensive. Might be able to just add the values.
+    IntStream stream = streams.stream().flatMapToInt(s -> s).parallel().filter(this::isNew).filter(this::maxLayers)
+        .distinct();
     return stream.toArray();
   }
 
   void run() {
-    final int ITERS = 10;
     int[] shapes = IntStream.concat(IntStream.of(Shape.FLAT_4), IntStream.of(Shape.PIN_4)).toArray();
     int[] newShapes;
 
+    System.out.println("Max iters: " + MAX_ITERS);
+    System.out.println("Max layers: " + MAX_LAYERS);
     System.out.println("Input shapes");
     displayShapes(shapes);
 
     newShapes = shapes.clone();
-    allShapes.addAll(IntStream.of(newShapes).boxed().collect(Collectors.toList()));
-    for (int i = 0; i < ITERS; ++i) {
+    allShapes.addAll(IntStream.of(newShapes).boxed().collect(Collectors.toSet()));
+    for (int i = 1; i <= MAX_ITERS; ++i) {
       System.out.printf("ITER #%d\n", i);
       newShapes = makeShapes(newShapes);
       if (newShapes.length == 0) {
@@ -89,17 +109,12 @@ public class Constructor {
         break;
       }
       System.out.printf("NEW %d\n\n", newShapes.length);
-      allShapes.addAll(IntStream.of(newShapes).boxed().collect(Collectors.toList()));
+      allShapes.addAll(IntStream.of(newShapes).boxed().collect(Collectors.toSet()));
 
       // System.out.println("Output shapes");
       // displayShapes(newShapes);
     }
-
-    System.out.println("All shapes");
-    // TODO: print as side-effect, don't make an array
-    shapes = allShapeStream().toArray();
-    displayShapes(shapes);
-    System.out.printf("Number: %d\n", shapes.length);
+    // displayAllShapes();
+    System.out.printf("Number: %d\n", allShapes.size());
   }
-
 }

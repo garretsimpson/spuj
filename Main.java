@@ -17,7 +17,10 @@ public class Main {
     // Tests.run();
 
     Constructor c = new Constructor();
+    long before = new Date().getTime();
     c.run();
+    long after = new Date().getTime();
+    System.out.printf("Time: %d\n", after - before);
   }
 
 }

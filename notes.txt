@@ -28,3 +28,147 @@ I get over 5x improvement (for 16 virtual cores).
 ROUNDS = 20, ITERS = 100M
 2332 pinPush(5f23b97c) => 623f07c0
 average time: 2353.90, 42.48 MOPS
+
+Implemented Constructor
+
+Tested with MAX_LAYERS = 1
+input shapes: FLAT_4 and PIN_4
+Returned 255 possible as expected
+
+Increased to 2 layers max.
+
+Failed with an StackOverflowError exception...
+
+ITER #4
+ONE_OPS 7 4576 > 32032
+TWO_OPS 3 4938 4576 > 135577728
+Exception in thread "main" java.lang.StackOverflowError
+        at java.base/java.util.stream.Streams$ConcatSpliterator.estimateSize(Streams.java:743)
+        at java.base/java.util.stream.Streams$ConcatSpliterator.estimateSize(Streams.java:743)
+
+Looks like it's stuck in a recursive loop?
+Actually the API docs warn about this in IntStream.concat()...
+  Use caution when constructing streams from repeated concatenation.
+  Accessing an element of a deeply concatenated stream can result in deep
+  call chains, or even {@code StackOverflowError}.
+
+Replaced the concat() calls with mapMulti().
+Ran it for 2 layers, and got the same number of shapes as my JavaScript version!
+
+...1-layer...
+
+SPU 1.0
+Wed Jun 12 00:33:08 PDT 2024
+
+Max iters: 10
+Max layers: 1
+Input shapes
+code: RrRrRrRr:--------:--------:--------, value: 0000000f
+code: P-P-P-P-:--------:--------:--------, value: 000f0000
+
+ITER #1
+ONE_OPS 7 2 > 14
+TWO_OPS 3 2 2 > 24
+NEW 7
+
+ITER #2
+ONE_OPS 7 7 > 49
+TWO_OPS 3 7 9 > 378
+NEW 8
+
+ITER #3
+ONE_OPS 7 8 > 56
+TWO_OPS 3 8 17 > 816
+NEW 84
+
+ITER #4
+ONE_OPS 7 84 > 588
+TWO_OPS 3 84 101 > 50904
+NEW 26
+
+ITER #5
+ONE_OPS 7 26 > 182
+TWO_OPS 3 26 127 > 19812
+NEW 32
+
+ITER #6
+ONE_OPS 7 32 > 224
+TWO_OPS 3 32 159 > 30528
+NEW 24
+
+ITER #7
+ONE_OPS 7 24 > 168
+TWO_OPS 3 24 183 > 26352
+NEW 72
+
+ITER #8
+ONE_OPS 7 72 > 504
+TWO_OPS 3 72 255 > 110160
+DONE
+
+Number: 255
+Time: 136
+
+...2-layers...
+
+SPU 1.0
+Wed Jun 12 00:39:30 PDT 2024
+
+Max iters: 20
+Max layers: 2
+Input shapes
+code: RrRrRrRr:--------:--------:--------, value: 0000000f
+code: P-P-P-P-:--------:--------:--------, value: 000f0000
+
+ITER #1
+ONE_OPS 7 2 > 14
+TWO_OPS 3 2 2 > 24
+NEW 11
+
+ITER #2
+ONE_OPS 7 11 > 77
+TWO_OPS 3 11 13 > 858
+NEW 59
+
+ITER #3
+ONE_OPS 7 59 > 413
+TWO_OPS 3 59 72 > 25488
+NEW 290
+
+ITER #4
+ONE_OPS 7 290 > 2030
+TWO_OPS 3 290 362 > 629880
+NEW 4576
+
+ITER #5
+ONE_OPS 7 4576 > 32032
+TWO_OPS 3 4576 4938 > 135577728
+NEW 2652
+
+ITER #6
+ONE_OPS 7 2652 > 18564
+TWO_OPS 3 2652 7590 > 120772080
+NEW 4052
+
+ITER #7
+ONE_OPS 7 4052 > 28364
+TWO_OPS 3 4052 11642 > 283040304
+NEW 4066
+
+ITER #8
+ONE_OPS 7 4066 > 28462
+TWO_OPS 3 4066 15708 > 383212368
+NEW 18424
+
+ITER #9
+ONE_OPS 7 18424 > 128968
+TWO_OPS 3 18424 34132 > 3773087808
+NEW 1148
+
+ITER #10
+ONE_OPS 7 1148 > 8036
+TWO_OPS 3 1148 35280 > 243008640
+DONE
+
+Number: 35280
+Time: 131512
