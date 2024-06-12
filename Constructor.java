@@ -1,6 +1,12 @@
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntUnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -10,26 +16,18 @@ public class Constructor {
   private static final int MAX_LAYERS = 1;
 
   /* TODO: BitSet does not handle negative indexes, so it's not useful for sizes > MAXINT/2 */
-  private BitSet allShapes = new BitSet();
+  // private BitSet allShapes = new BitSet();
+
+  private Set<Integer> allShapes = new HashSet<>();
+
+  private IntStream allShapeStream() {
+    return allShapes.stream().mapToInt(Integer::intValue);
+  }
 
   /* TODO: Add pre-filters for each op. E.g. stack only one-layer, non-crystal shapes and swap only half shapes. */
   private static final IntUnaryOperator[] ONE_OPS = { Ops::rotateRight, Ops::rotate180, Ops::rotateLeft, Ops::cutLeft,
       Ops::cutRight, Ops::pinPush, Ops::crystal };
   private static final IntBinaryOperator[] TWO_OPS = { Ops::swapLeft, Ops::swapRight, Ops::stack };
-
-  /* TODO: This should probably be an int generator rather than allocate an entire array */
-  private int[] getAllShapes() {
-    int[] shapes = new int[allShapes.cardinality()];
-    int shape = 0;
-    int i = 0;
-    while (true) {
-      shape = allShapes.nextSetBit(shape);
-      if (shape == -1)
-        break;
-      shapes[i++] = shape++;
-    }
-    return shapes;
-  }
 
   private void displayShapes(int[] shapes) {
     for (int shape : shapes) {
@@ -39,7 +37,7 @@ public class Constructor {
   }
 
   private boolean isNew(int shape) {
-    return (shape != 0) && !allShapes.get(shape);
+    return (shape != 0) && !allShapes.contains(shape);
   }
 
   private boolean maxLayers(int shape) {
@@ -60,18 +58,16 @@ public class Constructor {
     for (IntUnaryOperator op : ONE_OPS)
       stream = IntStream.concat(stream, IntStream.of(input).map(op));
 
-    int[] shapes = getAllShapes();
-    System.out.printf("TWO_OPS %d %d %d > %d\n", TWO_OPS.length, shapes.length, input.length,
-        2 * TWO_OPS.length * shapes.length * input.length);
-    for (int s1 : shapes) {
-      for (IntBinaryOperator op : TWO_OPS) {
-        stream = IntStream.concat(stream, IntStream.of(input).map(s2 -> op.applyAsInt(s1, s2)));
-        stream = IntStream.concat(stream, IntStream.of(input).filter(s2 -> s1 != s2).map(s2 -> op.applyAsInt(s2, s1)));
+    System.out.printf("TWO_OPS %d %d %d > %d\n", TWO_OPS.length, allShapes.size(), input.length,
+        2 * TWO_OPS.length * allShapes.size() * input.length);
+    for (IntBinaryOperator op : TWO_OPS) {
+      for (int s1 : input) {
+        stream = IntStream.concat(stream, allShapeStream().map(s2 -> op.applyAsInt(s1, s2)));
+        stream = IntStream.concat(stream, allShapeStream().filter(s2 -> s1 != s2).map(s2 -> op.applyAsInt(s2, s1)));
       }
     }
 
     stream = stream.filter(this::isNew).filter(this::maxLayers).distinct();
-
     return stream.toArray();
   }
 
@@ -84,8 +80,7 @@ public class Constructor {
     displayShapes(shapes);
 
     newShapes = shapes.clone();
-    for (int shape : newShapes)
-      allShapes.set(shape);
+    allShapes.addAll(IntStream.of(newShapes).boxed().collect(Collectors.toList()));
     for (int i = 0; i < ITERS; ++i) {
       System.out.printf("ITER #%d\n", i);
       newShapes = makeShapes(newShapes);
@@ -94,15 +89,15 @@ public class Constructor {
         break;
       }
       System.out.printf("NEW %d\n\n", newShapes.length);
-      for (int shape : newShapes)
-        allShapes.set(shape);
+      allShapes.addAll(IntStream.of(newShapes).boxed().collect(Collectors.toList()));
 
       // System.out.println("Output shapes");
       // displayShapes(newShapes);
     }
 
-    shapes = getAllShapes();
     System.out.println("All shapes");
+    // TODO: print as side-effect, don't make an array
+    shapes = allShapeStream().toArray();
     displayShapes(shapes);
     System.out.printf("Number: %d\n", shapes.length);
   }
