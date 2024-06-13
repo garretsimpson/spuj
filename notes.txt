@@ -203,3 +203,149 @@ Modified fastStack() to return when the top is not 1-layer.
 
 Number: 35280
 Time: 4305
+
+Ran 3 layers, but it quit too soon...
+
+SPU 1.0
+Wed Jun 12 02:55:06 PDT 2024
+
+Max iters: 20
+Max layers: 3
+Input shapes
+code: RrRrRrRr:--------:--------:--------, value: 0000000f
+code: P-P-P-P-:--------:--------:--------, value: 000f0000
+
+ITER #1
+ONE_OPS 4 2 > 8
+TWO_OPS 2 2 2 > 16
+NEW 7
+
+ITER #2
+ONE_OPS 4 7 > 28
+TWO_OPS 2 7 9 > 252
+NEW 37
+
+ITER #3
+ONE_OPS 4 37 > 148
+TWO_OPS 2 37 46 > 6808
+NEW 157
+
+ITER #4
+ONE_OPS 4 157 > 628
+TWO_OPS 2 157 203 > 127484
+NEW 534
+
+ITER #5
+ONE_OPS 4 534 > 2136
+TWO_OPS 2 534 737 > 1574232
+NEW 2950
+
+ITER #6
+ONE_OPS 4 2950 > 11800
+TWO_OPS 2 2950 3687 > 43506600
+NEW 19474
+
+ITER #7
+ONE_OPS 4 19474 > 77896
+TWO_OPS 2 19474 23161 > 1804149256
+NEW 79589
+
+ITER #8
+ONE_OPS 4 79589 > 318356
+TWO_OPS 2 79589 102750 > 32711079000
+NEW 110981
+
+ITER #9
+ONE_OPS 4 110981 > 443924
+TWO_OPS 2 110981 213731 > 94880320444
+NEW 103146
+
+ITER #10
+ONE_OPS 4 103146 > 412584
+TWO_OPS 2 103146 316877 > 130738380168
+NEW 151515
+
+ITER #11
+ONE_OPS 4 151515 > 606060
+TWO_OPS 2 151515 468392 > 283873655520
+NEW 262661
+
+ITER #12
+ONE_OPS 4 262661 > 1050644
+TWO_OPS 2 262661 731053 > 768076448132
+NEW 471533
+
+ITER #13
+ONE_OPS 4 471533 > 1886132
+TWO_OPS 2 471533 1202586 > 2268235937352
+NEW 601791
+
+ITER #14
+ONE_OPS 4 601791 > 2407164
+TWO_OPS 2 601791 1804377 > 4343431356828
+NEW 889972
+
+ITER #15
+ONE_OPS 4 889972 > 3559888
+TWO_OPS 2 889972 2694349 > 9591580672912
+NEW 754357
+
+ITER #16
+ONE_OPS 4 754357 > 3017428
+TWO_OPS 2 754357 3448706 > 10406222048168
+NEW 147239
+
+ITER #17
+ONE_OPS 4 147239 > 588956
+TWO_OPS 2 147239 3595945 > 2117853383420
+NEW 134196
+
+ITER #18
+ONE_OPS 4 134196 > 536784
+TWO_OPS 2 134196 3730141 > 2002280006544
+NEW 90037
+
+ITER #19
+ONE_OPS 4 90037 > 360148
+TWO_OPS 2 90037 3820178 > 1375829466344
+NEW 32701
+
+ITER #20
+ONE_OPS 4 32701 > 130804
+TWO_OPS 2 32701 3852879 > 503971984716
+NEW 12708
+
+Number: 3865587
+Time: 64307170
+
+The time is wrong, since the computer was off for about 6 hours.
+
+Added stats
+
+Test 2 layers, fastStack without crystals
+cut: 35280, stack: 2906894, rotate: 35280, pinPush 35280, crystal 35280, collapse: 54967
+
+Test 2 layers, fastStack with crystals
+cut: 35280, stack: 9642287, rotate: 35280, pinPush 35280, crystal 35280, collapse: 55930
+
+Test 2 layers, normal stack
+cut: 35280, stack: 1388859920, rotate: 35280, pinPush 35280, crystal 35280, collapse: 53572
+
+stack was called 1,388,859,920 times
+35280^2 = 1,244,678,400
+
+I would expect stack to be called 2 times the square.  Do streams dedup/memoize function calls?
+
+Also, collapse is called with every cut and pinPush, so it should be just the sum of those.
+
+Changed makeShapes to use streams and flatMap, instead of a for loop and mapMulti.
+Pretty sure this avoids duplicate calls to stack and swap.
+Also changed the run loop to add input shapes to allShapes after calling makeShapes instead of before.
+Also removed all calls to parallel except at the very end of the chain before toArray().
+It is slower now, but not sure if that's because of the metrics.
+
+Need to try both methods.
+
+Using allShapeStream().mapMulti(for(s1:input)) is faster than stream of input and loop of allShapes.
+also faster than using flatMap of streams.
+

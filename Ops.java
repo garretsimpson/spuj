@@ -6,6 +6,31 @@ import java.util.List;
  */
 class Ops {
 
+  class Stats {
+    static long cut;
+    static long swap;
+    static long stack;
+    static long rotate;
+    static long pinPush;
+    static long crystal;
+    static long collapse;
+
+    static void clear() {
+      cut = 0;
+      swap = 0;
+      stack = 0;
+      rotate = 0;
+      pinPush = 0;
+      crystal = 0;
+      collapse = 0;
+    }
+
+    static String asString() {
+      return String.format("cut: %d, swap: %d, stack: %d, rotate: %d, pinPush %d, crystal %d, collapse: %d\n", cut,
+          swap, stack, rotate, pinPush, crystal, collapse);
+    }
+  }
+
   /**
    * Unsigned min()
    * 
@@ -57,6 +82,7 @@ class Ops {
    * @return Value of the rotated shape
    */
   static int rotate(int shape, int steps) {
+    Stats.rotate++;
     int lShift = steps & 0x3;
     int rShift = 4 - lShift;
     int mask = (0xf >>> rShift) * 0x11111111;
@@ -182,8 +208,8 @@ class Ops {
    * @return
    */
   private static int collapse(int shape, int[] quads) {
+    Stats.collapse++;
     int part, val;
-
     // First layer remains unchanged
     int result = shape & Shape.LAYER_MASK;
     // int[] layerNums = new int[]{1, 2, 3};
@@ -237,6 +263,7 @@ class Ops {
   }
 
   static int cutLeft(int shape) {
+    Stats.cut++;
     int[] layers = Shape.toLayers(shape);
     // Step 1: break all cut crystals
     // Check all 8 places that a crystal can span the cut
@@ -259,6 +286,7 @@ class Ops {
   }
 
   static int cutRight(int shape) {
+    Stats.cut++;
     int[] layers = Shape.toLayers(shape);
     // Step 1: break all cut crystals
     // Check all 8 places that a crystal can span the cut
@@ -281,6 +309,7 @@ class Ops {
   }
 
   static int pinPush(int shape) {
+    Stats.pinPush++;
     // Step 1: break all cut crystals
     // Check all 4 places that a crystal can span the cut
     List<Integer> todo = new ArrayList<>();
@@ -311,6 +340,7 @@ class Ops {
   }
 
   static int crystal(int shape) {
+    Stats.crystal++;
     int result = shape;
     int[] layers = Shape.toLayers(shape);
     // pins and voids become crystals
@@ -326,12 +356,14 @@ class Ops {
   }
 
   static int swapLeft(int left, int right) {
+    Stats.swap++;
     int leftHalf = cutLeft(right);
     int rightHalf = cutRight(left);
     return leftHalf | rightHalf;
   }
 
   static int swapRight(int left, int right) {
+    Stats.swap++;
     int leftHalf = cutLeft(left);
     int rightHalf = cutRight(right);
     return leftHalf | rightHalf;
@@ -352,10 +384,12 @@ class Ops {
   static int fastSwapRight(int left, int right) {
     if (!isLeftHalf(left) || !isRightHalf(right))
       return 0;
+    Stats.swap++;
     return left | right;
   }
 
   static int stack(int top, int bottom) {
+    Stats.stack++;
     int val;
     int[] layers = Shape.toLayers(top);
     for (int part : layers) {
@@ -399,11 +433,13 @@ class Ops {
   /**
    * fastStack
    * 
-   * Only call stack() when the top layer is 1-layer.
+   * Only call stack() when the top shape is 1-layer.
    */
   static int fastStack(int top, int bottom) {
     int top1 = top & Shape.LAYER_MASK;
     if (top1 != top)
+      return 0;
+    if ((Shape.v1(top) & Shape.v2(top)) != 0)
       return 0;
     return stack(top1, bottom);
   }

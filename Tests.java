@@ -9,8 +9,8 @@ import java.util.stream.Stream;
 
 public class Tests {
   static void run() {
-    // code1();
-    perf1();
+    code1();
+    // perf1();
     // test1();
   }
 
@@ -68,6 +68,9 @@ public class Tests {
     IntUnaryOperator f = Ops::cutLeft;
     int[] i2 = IntStream.of(i1).map(f).toArray();
     System.out.println(Arrays.toString(i2));
+
+    IntStream.rangeClosed(1, 20).peek(number -> System.out.println(number + " " + Thread.currentThread().getName()))
+        .map(x -> -x).parallel().toArray();
   }
 
 }

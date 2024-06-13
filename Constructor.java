@@ -8,22 +8,22 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * Finder
+ * Constructor
  */
 public class Constructor {
-  private static final int MAX_ITERS = 20;
+  private static final int MAX_ITERS = 100;
   private static final int MAX_LAYERS = 2;
 
   private Set<Integer> allShapes = new HashSet<>();
 
   private IntStream allShapeStream() {
-    return allShapes.parallelStream().mapToInt(Integer::intValue);
+    return allShapes.stream().mapToInt(Integer::intValue);
+    // .peek(num -> System.out.println(String.format("%08x", num) + " " + Thread.currentThread().getName()));
   }
 
-  // private static final IntUnaryOperator[] ONE_OPS = { Ops::rotateRight, Ops::rotate180, Ops::rotateLeft,
-  // Ops::cutLeft,
-  // Ops::cutRight, Ops::pinPush, Ops::crystal };
-  // private static final IntBinaryOperator[] TWO_OPS = { Ops::swapLeft, Ops::swapRight, Ops::stack };
+  private static final IntUnaryOperator[] ONE_OPS_ALL = { Ops::rotateRight, Ops::rotate180, Ops::rotateLeft,
+      Ops::cutLeft, Ops::cutRight, Ops::pinPush, Ops::crystal };
+  private static final IntBinaryOperator[] TWO_OPS_ALL = { Ops::swapLeft, Ops::swapRight, Ops::stack };
   private static final IntUnaryOperator[] ONE_OPS = { Ops::rotateRight, Ops::cutRight, Ops::pinPush, Ops::crystal };
   private static final IntBinaryOperator[] TWO_OPS = { Ops::fastSwapRight, Ops::fastStack };
 
@@ -67,35 +67,36 @@ public class Constructor {
 
     System.out.printf("ONE_OPS %d %d > %d\n", ONE_OPS.length, input.length, 1l * ONE_OPS.length * input.length);
     for (IntUnaryOperator op : ONE_OPS) {
-      streams.add(IntStream.of(input).parallel().map(op));
+      streams.add(IntStream.of(input).map(op));
     }
 
     /* TODO: Add pre-filters for each op. */
     /* For example, swap only half shapes and stack only one-layer, non-crystal shapes. */
     System.out.printf("TWO_OPS %d %d %d > %d\n", TWO_OPS.length, input.length, allShapes.size(),
-        2l * TWO_OPS.length * input.length * allShapes.size());
+        TWO_OPS.length * input.length * (input.length + 2 * allShapes.size()));
     for (IntBinaryOperator op : TWO_OPS) {
-      streams.add(allShapeStream().mapMulti((s1, consumer) -> {
-        for (int s2 : input) {
+      streams.add(IntStream.of(input).mapMulti((s1, consumer) -> {
+        for (int s2 : input)
           consumer.accept(op.applyAsInt(s1, s2));
-        }
       }));
       streams.add(allShapeStream().mapMulti((s1, consumer) -> {
         for (int s2 : input) {
+          consumer.accept(op.applyAsInt(s1, s2));
           consumer.accept(op.applyAsInt(s2, s1));
         }
       }));
     }
 
-    // TODO: Not sure where parallel() should go.
-    // mapMulti() returns a sequential stream.
-    // distict() is probably expensive. Might be able to just add the values.
-    // TODO: try changing the order of these filters.
-    IntStream stream = streams.parallelStream().flatMapToInt(s -> s).filter(this::maxLayers).filter(this::isNew)
-        .distinct();
-    return stream.toArray();
+    Set<Integer> inputShapes = IntStream.of(input).boxed().collect(Collectors.toSet());
+    IntStream stream = streams.stream().flatMapToInt(s -> s).filter(this::maxLayers).filter(this::isNew)
+        .filter(s -> !inputShapes.contains(s)).distinct();
+    return stream.parallel().toArray();
   }
 
+  /*
+   * TODO: Try adding input shapes to allShapes before calling makeShapes. This will remove the need to filter the input
+   * shapes.
+   */
   void run() {
     int[] shapes = IntStream.concat(IntStream.of(Shape.FLAT_4), IntStream.of(Shape.PIN_4)).toArray();
     int[] newShapes;
@@ -105,17 +106,18 @@ public class Constructor {
     System.out.println("Input shapes");
     displayShapes(shapes);
 
-    newShapes = shapes.clone();
-    allShapes.addAll(IntStream.of(newShapes).boxed().collect(Collectors.toSet()));
     for (int i = 1; i <= MAX_ITERS; ++i) {
       System.out.printf("ITER #%d\n", i);
-      newShapes = makeShapes(newShapes);
+      // Ops.Stats.clear();
+      newShapes = makeShapes(shapes);
+      // System.out.println(Ops.Stats.asString());
+      allShapes.addAll(IntStream.of(shapes).boxed().collect(Collectors.toSet()));
       if (newShapes.length == 0) {
         System.out.printf("DONE\n\n");
         break;
       }
       System.out.printf("NEW %d\n\n", newShapes.length);
-      allShapes.addAll(IntStream.of(newShapes).boxed().collect(Collectors.toSet()));
+      shapes = newShapes;
 
       // System.out.println("Output shapes");
       // displayShapes(newShapes);
