@@ -322,19 +322,21 @@ The time is wrong, since the computer was off for about 6 hours.
 
 Added stats
 
-Test 2 layers, fastStack without crystals
-cut: 35280, stack: 2906894, rotate: 35280, pinPush 35280, crystal 35280, collapse: 54967
+Test 2 layers, normal stack
+cut: 35280, stack: 1388859920, rotate: 35280, pinPush 35280, crystal 35280, collapse: 53572
 
 Test 2 layers, fastStack with crystals
 cut: 35280, stack: 9642287, rotate: 35280, pinPush 35280, crystal 35280, collapse: 55930
 
-Test 2 layers, normal stack
-cut: 35280, stack: 1388859920, rotate: 35280, pinPush 35280, crystal 35280, collapse: 53572
+Test 2 layers, fastStack without crystals
+cut: 35280, stack: 2906894, rotate: 35280, pinPush 35280, crystal 35280, collapse: 54967
 
 stack was called 1,388,859,920 times
 35280^2 = 1,244,678,400
 
 I would expect stack to be called 2 times the square.  Do streams dedup/memoize function calls?
+Different runs call stack a differnt number of times.
+Maybe (hopefully) this is due to finding different solutions to some shapes.  Like swap or stack could make the same shape.
 
 Also, collapse is called with every cut and pinPush, so it should be just the sum of those.
 
@@ -346,6 +348,31 @@ It is slower now, but not sure if that's because of the metrics.
 
 Need to try both methods.
 
-Using allShapeStream().mapMulti(for(s1:input)) is faster than stream of input and loop of allShapes.
-also faster than using flatMap of streams.
+Using allShapeStream().mapMulti(for(s1:input)) is faster than other way around.
+Also faster than using flatMap of streams.  At least for small number of input shapes (~5000).
+
+TODO
+- Try implementing both methods: store new shapes before calling makeShapes, and after calling makeShapes.
+- Write results to a file.
+- Implement shape analysis.  E.g. Find all shapes that match a pattern, such as pin under crystal.
+- Remember the op and input shapes for each new shape, at least until that data is written to a file.
+- Investigate parallel() some more.  It seems to only be using some of the cores, around 50% total CPU usage.
+- More performance improvements, if possible.
+- Find all 4-layer shapes.
+- Implement cost function and find minimum soliutions.  Would need to store all solutions in memory I think.  Might need a file backed cache.
+- Modify solution viewer to work with S2 ops.  Host it on github?
+
+More optimization
+
+Changed run method to store new shapes before calling makeShapes.
+This allowed shapes to be filtered out before calling the op, rather than afterwards.
+Under 2 seconds now.
+
+Number: 35280
+Time: 1915
+cut: 35280, swap: 32357, stack: 2809592, rotate: 35280, pinPush 35280, crystal 35280, collapse: 56579
+
+Further optimization might be possible:
+- Keep track of which shapes were used rather than build a set of new shapes every iter.
+- Use pre-filters instead of fastSwap and fastStack.
 
