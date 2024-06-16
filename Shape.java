@@ -25,7 +25,8 @@ public class Shape {
   public static final int LAYER_MASK = 0x000f000f;
 
   public static final int NUM_LAYERS = 4;
-  private static final int NUM_SPOTS = 16;
+  public static final int NUM_QUADS = 4;
+  public static final int NUM_SPOTS = NUM_LAYERS * NUM_QUADS;
   private static final char CIRC = 'C';
   private static final char RECT = 'R';
   private static final char STAR = 'S';

@@ -354,7 +354,7 @@ Also faster than using flatMap of streams.  At least for small number of input s
 TODO
 - Try implementing both methods: store new shapes before calling makeShapes, and after calling makeShapes.
 - Write results to a file.
-- Implement shape analysis.  E.g. Find all shapes that match a pattern, such as pin under crystal.
+- Implement shape analysis.  E.g. Find all shapes that match a pattern, such as pin or gap under crystal.
 - Remember the op and input shapes for each new shape, at least until that data is written to a file.
 - Investigate parallel() some more.  It seems to only be using some of the cores, around 50% total CPU usage.
 - More performance improvements, if possible.
@@ -373,6 +373,141 @@ Time: 1915
 cut: 35280, swap: 32357, stack: 2809592, rotate: 35280, pinPush 35280, crystal 35280, collapse: 56579
 
 Further optimization might be possible:
+- Optimize stack op.
+- Optimize dropPin and dropPart.
 - Keep track of which shapes were used rather than build a set of new shapes every iter.
 - Use pre-filters instead of fastSwap and fastStack.
 
+I think there might be a bug in dropPart and dropPin when dropping from a layer that is occupied.
+For example, stack a pin on a 4-layer solid shape.
+This works, but only because Shape.PIN_MASK << (4 * offset + quad) is zero when offset is 4.
+
+3-layers...
+
+SPU 1.0
+Fri Jun 14 01:36:51 PDT 2024
+
+Max iters: 100
+Max layers: 3
+Input shapes
+code: RrRrRrRr:--------:--------:--------, value: 0000000f
+code: P-P-P-P-:--------:--------:--------, value: 000f0000
+
+ITER #1
+ONE_OPS 4 2 > 8
+TWO_OPS 2 2 2 > 8
+NEW 7
+
+ITER #2
+ONE_OPS 4 7 > 28
+TWO_OPS 2 7 9 > 154
+NEW 37
+
+ITER #3
+ONE_OPS 4 37 > 148
+TWO_OPS 2 37 46 > 4070
+NEW 157
+
+ITER #4
+ONE_OPS 4 157 > 628
+TWO_OPS 2 157 203 > 78186
+NEW 534
+
+ITER #5
+ONE_OPS 4 534 > 2136
+TWO_OPS 2 534 737 > 1003920
+NEW 2950
+
+ITER #6
+ONE_OPS 4 2950 > 11800
+TWO_OPS 2 2950 3687 > 26101600
+NEW 19474
+
+ITER #7
+ONE_OPS 4 19474 > 77896
+TWO_OPS 2 19474 23161 > 1045675904
+NEW 79589
+
+ITER #8
+ONE_OPS 4 79589 > 318356
+TWO_OPS 2 79589 102750 > 20042261158
+NEW 110981
+
+ITER #9
+ONE_OPS 4 110981 > 443924
+TWO_OPS 2 110981 213731 > 70246755722
+NEW 103146
+
+ITER #10
+ONE_OPS 4 103146 > 412584
+TWO_OPS 2 103146 316877 > 109460185536
+NEW 151515
+
+ITER #11
+ONE_OPS 4 151515 > 606060
+TWO_OPS 2 151515 468392 > 237960065070
+NEW 262661
+
+ITER #12
+ONE_OPS 4 262661 > 1050644
+TWO_OPS 2 262661 731053 > 630094846290
+NEW 471533
+
+ITER #13
+ONE_OPS 4 471533 > 1886132
+TWO_OPS 2 471533 1202586 > 1823549197174
+NEW 601791
+
+ITER #14
+ONE_OPS 4 601791 > 2407164
+TWO_OPS 2 601791 1804377 > 3619126541466
+NEW 889972
+
+ITER #15
+ONE_OPS 4 889972 > 3559888
+TWO_OPS 2 889972 2694349 > 8007480351344
+NEW 754357
+
+ITER #16
+ONE_OPS 4 754357 > 3017428
+TWO_OPS 2 754357 3448706 > 9268113081270
+NEW 147239
+
+ITER #17
+ONE_OPS 4 147239 > 588956
+TWO_OPS 2 147239 3595945 > 2074494737178
+NEW 134196
+
+ITER #18
+ONE_OPS 4 134196 > 536784
+TWO_OPS 2 134196 3730141 > 1966262873712
+NEW 90037
+
+ITER #19
+ONE_OPS 4 90037 > 360148
+TWO_OPS 2 90037 3820178 > 1359616143606
+NEW 32701
+
+ITER #20
+ONE_OPS 4 32701 > 130804
+TWO_OPS 2 32701 3852879 > 501833273914
+NEW 12708
+
+ITER #21
+ONE_OPS 4 12708 > 50832
+TWO_OPS 2 12708 3865587 > 196172531856
+DONE
+
+Number: 3865587
+Time: 77989196
+cut: 3865587, swap: 3222003, stack: 309229442, rotate: 3865587, pinPush 3865587, crystal 3865587, collapse: 5970101
+
+77989196msec is 21.66 hours
+minus about 6 is about 16 hours, which is 57,600,000 msec
+
+            number   time(sec)
+1-layer        255       0.055
+2-layer     35,280       2.030
+3-layer  3,865,587  57,600.000
+
+Optimized stack().  Was 34 MOPS, now 68 MOPS.

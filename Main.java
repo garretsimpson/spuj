@@ -13,9 +13,13 @@ public class Main {
     System.out.println();
 
     // ShapeTests.run();
-    // OpTests.run();
-    // Tests.run();
+    OpTests.run();
+    Tests.run();
 
+    // makeShapes();
+  }
+
+  static void makeShapes() {
     Ops.Stats.clear();
     Constructor c = new Constructor();
     long before = new Date().getTime();

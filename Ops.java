@@ -149,11 +149,11 @@ class Ops {
 
   private static final int[][] NEXT_SPOTS2 = { { 1, 4 }, { 0, 5 }, { 3, 6 }, { 2, 7 }, { 0, 5, 8 }, { 1, 4, 9 },
       { 2, 7, 10 }, { 3, 6, 11 }, { 4, 9, 12 }, { 5, 8, 13 }, { 6, 11, 14 }, { 7, 10, 15 }, { 8, 13 }, { 9, 12 },
-      { 10, 15 }, { 11, 14 }, };
+      { 10, 15 }, { 11, 14 } };
 
   private static final int[][] NEXT_SPOTS4 = { { 1, 3, 4 }, { 0, 2, 5 }, { 1, 3, 6 }, { 0, 2, 7 }, { 0, 5, 7, 8 },
       { 1, 4, 6, 9 }, { 2, 5, 7, 10 }, { 3, 4, 6, 11 }, { 4, 9, 11, 12 }, { 5, 8, 10, 13 }, { 6, 9, 11, 14 },
-      { 7, 8, 10, 15 }, {}, {}, {}, {}, };
+      { 7, 8, 10, 15 }, {}, {}, {}, {} };
 
   /**
    * @param shape
@@ -181,7 +181,7 @@ class Ops {
   private static int findCrystals_new(int shape, List<Integer> todo, int[][] mesh) {
     int result = 0;
     int num, val;
-    boolean[] todo2 = new boolean[16];
+    boolean[] todo2 = new boolean[Shape.NUM_SPOTS];
     for (int i = 0; i < todo.size(); ++i)
       todo2[todo.get(i)] = true;
     for (int i = 0; i < todo.size(); ++i) {
@@ -213,7 +213,7 @@ class Ops {
     // First layer remains unchanged
     int result = shape & Shape.LAYER_MASK;
     // int[] layerNums = new int[]{1, 2, 3};
-    for (int layerNum = 1; layerNum < 4; ++layerNum) {
+    for (int layerNum = 1; layerNum < Shape.NUM_LAYERS; ++layerNum) {
       part = (shape >>> (4 * layerNum)) & Shape.LAYER_MASK;
       if (part == 0)
         continue;
@@ -227,7 +227,7 @@ class Ops {
       }
 
       // Find all parts
-      List<Integer> parts = new ArrayList<>();
+      List<Integer> parts = new ArrayList<>(2);
       int v1 = Shape.v1(part);
       int v2 = Shape.v2(part);
       if (v1 == 0x5) {
@@ -388,19 +388,19 @@ class Ops {
     return left | right;
   }
 
-  static int stack(int top, int bottom) {
+  static int stack_old(int top, int bottom) {
     Stats.stack++;
     int val;
     int[] layers = Shape.toLayers(top);
     for (int part : layers) {
       if (part == 0)
         break;
-      for (int quad = 0; quad < 4; ++quad) {
+      for (int quad = 0; quad < Shape.NUM_QUADS; ++quad) {
         val = (part >>> quad) & 0x11;
         if (val == 0x10) {
           // drop pin
           part &= ~(0x10 << quad);
-          bottom = dropPin(bottom, quad, 4);
+          bottom = dropPin(bottom, quad, Shape.NUM_LAYERS);
         } else if (val == 0x11) {
           // break crystal
           part &= ~(0x11 << quad);
@@ -412,7 +412,7 @@ class Ops {
         return 0;
       }
       // find all parts
-      List<Integer> parts = new ArrayList<>();
+      List<Integer> parts = new ArrayList<>(2);
       if (part == 0x5) {
         parts.add(0x1);
         parts.add(0x4);
@@ -424,16 +424,52 @@ class Ops {
       }
       // drop parts
       for (int part1 : parts) {
-        bottom = dropPart(bottom, part1, 4);
+        bottom = dropPart(bottom, part1, Shape.NUM_LAYERS);
       }
     }
     return bottom;
   }
 
+  static int stack(int top, int bottom) {
+    Stats.stack++;
+
+    // break all crystals on top
+    int v1 = Shape.v1(top);
+    int v2 = Shape.v2(top);
+    top &= ~((v1 & v2) * Shape.CRYSTAL_MASK);
+
+    int part, value;
+    for (int layerNum = 0; layerNum < Shape.NUM_LAYERS; ++layerNum) {
+      part = (top >>> (4 * layerNum)) & Shape.LAYER_MASK;
+      if (part == 0)
+        break;
+      // drop pins
+      for (int quad = 0; quad < Shape.NUM_QUADS; ++quad) {
+        value = (part >>> quad) & Shape.CRYSTAL_MASK;
+        if (value == Shape.PIN_MASK) {
+          part &= ~(Shape.PIN_MASK << quad);
+          bottom = dropPin(bottom, quad, Shape.NUM_LAYERS);
+        }
+      }
+      // drop parts
+      if (part == 0x5) {
+        bottom = dropPart(bottom, 0x1, Shape.NUM_LAYERS);
+        bottom = dropPart(bottom, 0x4, Shape.NUM_LAYERS);
+      } else if (part == 0xa) {
+        bottom = dropPart(bottom, 0x2, Shape.NUM_LAYERS);
+        bottom = dropPart(bottom, 0x8, Shape.NUM_LAYERS);
+      } else {
+        bottom = dropPart(bottom, part, Shape.NUM_LAYERS);
+      }
+    }
+    return bottom;
+
+  }
+
   /**
    * fastStack
    * 
-   * Only call stack() when the top shape is 1-layer.
+   * Only call stack() when the top shape is 1-layer, no crystal.
    */
   static int fastStack(int top, int bottom) {
     int top1 = top & Shape.LAYER_MASK;

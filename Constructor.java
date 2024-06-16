@@ -12,7 +12,7 @@ import java.util.stream.IntStream;
  */
 public class Constructor {
   private static final int MAX_ITERS = 100;
-  private static final int MAX_LAYERS = 3;
+  private static final int MAX_LAYERS = 2;
 
   private Set<Integer> allShapes = new HashSet<>();
 
@@ -93,10 +93,6 @@ public class Constructor {
     return stream.parallel().toArray();
   }
 
-  /*
-   * TODO: Try adding input shapes to allShapes before calling makeShapes. This will remove the need to filter the input
-   * shapes.
-   */
   void run1() {
     int[] shapes = IntStream.concat(IntStream.of(Shape.FLAT_4), IntStream.of(Shape.PIN_4)).toArray();
     int[] newShapes;
