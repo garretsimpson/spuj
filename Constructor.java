@@ -28,9 +28,14 @@ public class Constructor {
   private static final IntBinaryOperator[] TWO_OPS = { Ops::fastSwapRight, Ops::fastStack };
 
   private void displayShapes(int[] shapes) {
+    if (shapes.length == 0) {
+      System.out.println("No shapes to display");
+      return;
+    }
     for (int shape : shapes) {
       System.out.println(new Shape(shape));
     }
+    System.out.printf("Number of shapes: %d\n", shapes.length);
     System.out.println();
   }
 
@@ -183,14 +188,71 @@ public class Constructor {
       // displayShapes(newShapes);
     }
     displayResults();
+    test1();
   }
 
   void displayResults() {
-    long lefts = allShapes.stream().filter(Shape::isLeftHalf).count();
-    long rights = allShapes.stream().filter(Shape::isRightHalf).count();
-    long oneLayerNoCrystal = allShapes.stream().filter(Shape::isOneLayer).filter(v -> !Shape.hasCrystal(v)).count();
-    System.out.printf("lefts: %d, rights: %d\n", lefts, rights);
-    System.out.printf("oneLayerNoCrystal: %d\n", oneLayerNoCrystal);
+    int[] lefts = allShapeStream().filter(Shape::isLeftHalf).toArray();
+    int[] rights = allShapeStream().filter(Shape::isRightHalf).toArray();
+    int[] noCrystal = allShapeStream().filter(v -> !Shape.hasCrystal(v)).sorted().toArray();
+    int[] oneLayerNoCrystal = allShapeStream().filter(Shape::isOneLayer).filter(v -> !Shape.hasCrystal(v)).toArray();
+
+    System.out.printf("lefts: %d, rights: %d\n", lefts.length, rights.length);
+    System.out.printf("noCrystal: %d\n", noCrystal.length);
+    System.out.printf("oneLayerNoCrystal: %d\n", oneLayerNoCrystal.length);
     System.out.printf("Number: %d\n", allShapes.size());
+  }
+
+  /* Misc analysis */
+  void Find1() {
+    int[] lefts = allShapeStream().filter(Shape::isLeftHalf).toArray();
+    int[] rights = allShapeStream().filter(Shape::isRightHalf).toArray();
+    Set<Integer> workSet = new HashSet<>(allShapes);
+    int[] shapes;
+    // Get list of all shapes that can be swapped.
+    Set<Integer> swapped = IntStream.of(lefts).mapMulti((left, consumer) -> {
+      for (int right : rights)
+        consumer.accept(Ops.fastSwapRight(left, right));
+    }).boxed().collect(Collectors.toSet());
+    // Remove them from the list of all shapes.
+    workSet.removeAll(swapped);
+    // Filter out the lefts and rights.
+    Set<Integer> halves = new HashSet<>();
+    halves.addAll(IntStream.of(lefts).boxed().collect(Collectors.toSet()));
+    halves.addAll(IntStream.of(lefts).map(Ops::rotateRight).boxed().collect(Collectors.toSet()));
+    halves.addAll(IntStream.of(lefts).map(Ops::rotate180).boxed().collect(Collectors.toSet()));
+    halves.addAll(IntStream.of(lefts).map(Ops::rotateLeft).boxed().collect(Collectors.toSet()));
+    workSet.removeAll(halves);
+    // Display the remaining.
+    shapes = workSet.stream().mapToInt(Integer::intValue).sorted().toArray();
+    displayShapes(shapes);
+  }
+
+  /* Find all shapes that cannot be made by swapping */
+  void find2() {
+    Ops.Stats.clear();
+    // Find all shapes that can be made by swapping
+    int[] shapes;
+    // Set<Integer> workSet;
+    int[] lefts = allShapeStream().filter(Shape::isLeftHalf).toArray();
+    int[] rights = allShapeStream().filter(Shape::isRightHalf).toArray();
+    // Stream stream = allShapeStream().mapMulti((left, consumer) -> {
+    // for (int right : allShapes)
+    // consumer.accept(Ops.swapRight(left, right));
+    // });
+    IntStream stream = IntStream.of(lefts).mapMulti((left, consumer) -> {
+      for (int right : rights)
+        consumer.accept(Ops.fastSwapRight(left, right));
+    });
+    Set<Integer> allSwapKeys = stream.parallel().filter(s -> (s == Ops.keyValue(s))).boxed()
+        .collect(Collectors.toSet());
+    shapes = allShapeStream().filter(s -> !allSwapKeys.contains(Ops.keyValue(s))).parallel().toArray();
+    displayShapes(shapes);
+  }
+
+  void test1() {
+    final String filename = "test1.txt";
+    System.out.printf("Writing file: %s\n", filename);
+    ShapeFile.write(filename, allShapeStream().sorted().toArray());
   }
 }

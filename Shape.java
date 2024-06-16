@@ -50,6 +50,10 @@ public class Shape {
     this.intValue = value;
   }
 
+  public String toString() {
+    return String.format("value: %08x, code: %s", intValue, code);
+  }
+
   private boolean verifyCode(String code) {
     String RE = "((?:[CRSWc][urygcbmw])|(?:P-)|(?:--)){4}";
     String[] values = code.split(SEP);
@@ -142,10 +146,6 @@ public class Shape {
     }
 
     return result;
-  }
-
-  public String toString() {
-    return String.format("code: %s, value: %08x", code, intValue);
   }
 
   public int intValue() {

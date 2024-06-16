@@ -554,3 +554,53 @@ Fixed it with AtomicInt.
 
 with parallel...
 cut: 35280, swap: 32400, stack: 2822400, rotate: 35280, pinPush 35280, crystal 35280, collapse: 70560
+
+Try stack with any non-crystal shape (remove 1-layer check)...
+
+lefts: 180, rights: 180
+noCrystal: 3224
+oneLayerNoCrystal: 80
+Number: 35280
+Time: 3898
+cut: 35280, swap: 32400, stack: 113742720, rotate: 35280, pinPush 35280, crystal 35280, collapse: 70560
+
+There are 3224 (istead of 80) top layer shapes.
+So stack should be 3224 * 35280 = 113,742,720.  Correct.
+
+But, that's significantly more shapes and stack operations to perform.
+
+I think I want to find all possible shapes first, and find solutions later.
+
+1-layer shapes
+ 80 without crystals
+175 with crystals
+
+1 and 2-layer shapes
+ 3,224 without crystals: 
+32,056 with crystals
+
+         without    with
+1-layer       80     175
+2-layer    3,144  31,881
+total      3,224  32,056
+
+1-layer...
+lefts: 15, rights: 15
+noCrystal: 80
+cut: 255, swap: 225, stack: 20400, rotate: 255, pinPush 255, crystal 255, collapse: 510
+
+This seems to indicate there are 30 shapes that require a stacker.  I thought all 1-layer could use a swapper.
+Need to find some examples.
+
+For 1-layer, ut's the shapes that swapper can't make, like half empty.  Need to use a cutter?
+
+The 30 is the lefts and the rights.
+
+Can you make a half shape with the swapper?
+I think so, as long as both inputs have something.
+But better to use a "smart swapper" that uses a cutter (one input) if needed.
+
+All shapes w/swap
+Number of shapes: 3168
+left/right w/fastSwap
+Number of shapes: 3840
