@@ -1,33 +1,30 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Ops
  */
 class Ops {
 
-  class Stats {
-    static long cut;
-    static long swap;
-    static long stack;
-    static long rotate;
-    static long pinPush;
-    static long crystal;
-    static long collapse;
+  enum Stats {
+    CUT, SWAP, STACK, ROTATE, PINPUSH, CRYSTAL, COLLAPSE;
+
+    AtomicInteger value = new AtomicInteger();
 
     static void clear() {
-      cut = 0;
-      swap = 0;
-      stack = 0;
-      rotate = 0;
-      pinPush = 0;
-      crystal = 0;
-      collapse = 0;
+      for (Stats t : Stats.values())
+        t.value.set(0);
+    }
+
+    void increment() {
+      value.incrementAndGet();
     }
 
     static String asString() {
-      return String.format("cut: %d, swap: %d, stack: %d, rotate: %d, pinPush %d, crystal %d, collapse: %d\n", cut,
-          swap, stack, rotate, pinPush, crystal, collapse);
+      return String.format("cut: %d, swap: %d, stack: %d, rotate: %d, pinPush %d, crystal %d, collapse: %d\n",
+          CUT.value.get(), SWAP.value.get(), STACK.value.get(), ROTATE.value.get(), PINPUSH.value.get(),
+          CRYSTAL.value.get(), COLLAPSE.value.get());
     }
   }
 
@@ -82,7 +79,7 @@ class Ops {
    * @return Value of the rotated shape
    */
   static int rotate(int shape, int steps) {
-    Stats.rotate++;
+    Stats.ROTATE.increment();
     int lShift = steps & 0x3;
     int rShift = 4 - lShift;
     int mask = (0xf >>> rShift) * 0x11111111;
@@ -208,7 +205,7 @@ class Ops {
    * @return
    */
   private static int collapse(int shape, int[] quads) {
-    Stats.collapse++;
+    Stats.COLLAPSE.increment();
     int part, val;
     // First layer remains unchanged
     int result = shape & Shape.LAYER_MASK;
@@ -263,7 +260,7 @@ class Ops {
   }
 
   static int cutLeft(int shape) {
-    Stats.cut++;
+    Stats.CUT.increment();
     int[] layers = Shape.toLayers(shape);
     // Step 1: break all cut crystals
     // Check all 8 places that a crystal can span the cut
@@ -286,7 +283,7 @@ class Ops {
   }
 
   static int cutRight(int shape) {
-    Stats.cut++;
+    Stats.CUT.increment();
     int[] layers = Shape.toLayers(shape);
     // Step 1: break all cut crystals
     // Check all 8 places that a crystal can span the cut
@@ -309,7 +306,7 @@ class Ops {
   }
 
   static int pinPush(int shape) {
-    Stats.pinPush++;
+    Stats.PINPUSH.increment();
     // Step 1: break all cut crystals
     // Check all 4 places that a crystal can span the cut
     List<Integer> todo = new ArrayList<>();
@@ -340,7 +337,7 @@ class Ops {
   }
 
   static int crystal(int shape) {
-    Stats.crystal++;
+    Stats.CRYSTAL.increment();
     int result = shape;
     int[] layers = Shape.toLayers(shape);
     // pins and voids become crystals
@@ -356,40 +353,28 @@ class Ops {
   }
 
   static int swapLeft(int left, int right) {
-    Stats.swap++;
+    Stats.SWAP.increment();
     int leftHalf = cutLeft(right);
     int rightHalf = cutRight(left);
     return leftHalf | rightHalf;
   }
 
   static int swapRight(int left, int right) {
-    Stats.swap++;
+    Stats.SWAP.increment();
     int leftHalf = cutLeft(left);
     int rightHalf = cutRight(right);
     return leftHalf | rightHalf;
   }
 
-  private static boolean isLeftHalf(int shape) {
-    int v1 = Shape.v1(shape);
-    int v2 = Shape.v2(shape);
-    return ((v1 | v2) & 0x3333) == 0;
-  }
-
-  private static boolean isRightHalf(int shape) {
-    int v1 = Shape.v1(shape);
-    int v2 = Shape.v2(shape);
-    return ((v1 | v2) & 0xcccc) == 0;
-  }
-
   static int fastSwapRight(int left, int right) {
-    if (!isLeftHalf(left) || !isRightHalf(right))
+    if (!Shape.isLeftHalf(left) || !Shape.isRightHalf(right))
       return 0;
-    Stats.swap++;
+    Stats.SWAP.increment();
     return left | right;
   }
 
   static int stack_old(int top, int bottom) {
-    Stats.stack++;
+    Stats.STACK.increment();
     int val;
     int[] layers = Shape.toLayers(top);
     for (int part : layers) {
@@ -431,7 +416,7 @@ class Ops {
   }
 
   static int stack(int top, int bottom) {
-    Stats.stack++;
+    Stats.STACK.increment();
 
     // break all crystals on top
     int v1 = Shape.v1(top);
@@ -472,12 +457,9 @@ class Ops {
    * Only call stack() when the top shape is 1-layer, no crystal.
    */
   static int fastStack(int top, int bottom) {
-    int top1 = top & Shape.LAYER_MASK;
-    if (top1 != top)
+    if (!Shape.isOneLayer(top) || Shape.hasCrystal(top))
       return 0;
-    if ((Shape.v1(top) & Shape.v2(top)) != 0)
-      return 0;
-    return stack(top1, bottom);
+    return stack(top, bottom);
   }
 
 }

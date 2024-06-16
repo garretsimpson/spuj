@@ -510,4 +510,47 @@ minus about 6 is about 16 hours, which is 57,600,000 msec
 2-layer     35,280       2.030
 3-layer  3,865,587  57,600.000
 
-Optimized stack().  Was 34 MOPS, now 68 MOPS.
+Optimized stack().  Was 35 MOPS, now 65 MOPS.
+
+Investigate why swap is different each run...
+
+Lefts: 180, Rights: 180
+Number: 35280
+Time: 2077
+cut: 35280, swap: 32347, stack: 2806959, rotate: 35280, pinPush 35280, crystal 35280, collapse: 57621
+
+I would expect swap to be all the left/right combos.
+That is number of half shapes squared.  180^2 = 32,400.
+But swap changes each run.
+
+When run with sequential (not parallel) streams...
+cut: 35280, swap: 32400, stack: 2822400, rotate: 35280, pinPush 35280, crystal 35280, collapse: 70560
+
+swap 180^2
+stack 1680^2
+
+Lefts: 180, Rights: 180
+oneLayerNoCrystal: 80 (3^4 - 1)
+
+swap = 32400 = 180^2 (correct)
+stack = 2822400 = 35280 * 80 (correct)
+collapse = 70560 (cut + pinPush)
+
+All of these are less when running with parallel stream.  Don't know why.
+I though maybe it was finding different solutions, but maybe parallel stream are not working as expected.
+The collapse numbers are strange. It has nothing to do with swap or stack, so should be unaffected by the fast versions.
+
+without parallel...
+cut: 35280, swap: 32400, stack: 2822400, rotate: 35280, pinPush 35280, crystal 35280, collapse: 70560
+
+with parallel...
+cut: 35280, swap: 32373, stack: 2803965, rotate: 35280, pinPush 35280, crystal 35280, collapse: 59847
+cut: 35280, swap: 32361, stack: 2804396, rotate: 35280, pinPush 35280, crystal 35280, collapse: 57882
+cut: 35280, swap: 32357, stack: 2805509, rotate: 35280, pinPush 35280, crystal 35280, collapse: 56245
+
+Maybe the stats are not thread safe?
+Yep, that was it.
+Fixed it with AtomicInt.
+
+with parallel...
+cut: 35280, swap: 32400, stack: 2822400, rotate: 35280, pinPush 35280, crystal 35280, collapse: 70560

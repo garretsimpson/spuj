@@ -179,4 +179,24 @@ public class Shape {
     return result;
   }
 
+  static boolean hasCrystal(int shape) {
+    return (v1(shape) & v2(shape)) != 0;
+  }
+
+  static boolean isOneLayer(int shape) {
+    return (shape & LAYER_MASK) == shape;
+  }
+
+  static boolean isLeftHalf(int shape) {
+    int v1 = v1(shape);
+    int v2 = v2(shape);
+    return ((v1 | v2) & 0x3333) == 0;
+  }
+
+  static boolean isRightHalf(int shape) {
+    int v1 = v1(shape);
+    int v2 = v2(shape);
+    return ((v1 | v2) & 0xcccc) == 0;
+  }
+
 }

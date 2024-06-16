@@ -118,8 +118,7 @@ public class Constructor {
       // System.out.println("Output shapes");
       // displayShapes(newShapes);
     }
-    // displayAllShapes();
-    System.out.printf("Number: %d\n", allShapes.size());
+    displayResults();
   }
 
   /**
@@ -147,9 +146,9 @@ public class Constructor {
         for (int s2 : input)
           consumer.accept(op.applyAsInt(s1, s2));
       }));
-      streams.add(allShapeStream().filter(s -> !inputShapes.contains(s)).mapMulti((s1, consumer) -> {
-        for (int s2 : input)
-          consumer.accept(op.applyAsInt(s2, s1));
+      streams.add(allShapeStream().filter(s -> !inputShapes.contains(s)).mapMulti((s2, consumer) -> {
+        for (int s1 : input)
+          consumer.accept(op.applyAsInt(s1, s2));
       }));
     }
 
@@ -183,8 +182,15 @@ public class Constructor {
       // System.out.println("Output shapes");
       // displayShapes(newShapes);
     }
-    // displayAllShapes();
-    System.out.printf("Number: %d\n", allShapes.size());
+    displayResults();
   }
 
+  void displayResults() {
+    long lefts = allShapes.stream().filter(Shape::isLeftHalf).count();
+    long rights = allShapes.stream().filter(Shape::isRightHalf).count();
+    long oneLayerNoCrystal = allShapes.stream().filter(Shape::isOneLayer).filter(v -> !Shape.hasCrystal(v)).count();
+    System.out.printf("lefts: %d, rights: %d\n", lefts, rights);
+    System.out.printf("oneLayerNoCrystal: %d\n", oneLayerNoCrystal);
+    System.out.printf("Number: %d\n", allShapes.size());
+  }
 }

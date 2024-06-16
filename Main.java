@@ -13,10 +13,10 @@ public class Main {
     System.out.println();
 
     // ShapeTests.run();
-    OpTests.run();
-    Tests.run();
+    // OpTests.run();
+    // Tests.run();
 
-    // makeShapes();
+    makeShapes();
   }
 
   static void makeShapes() {
