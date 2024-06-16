@@ -48,7 +48,8 @@ enum OpTests {
   STACK_02(Ops::stack, 0x00010000, 0x1111, 0x1111) {},
   STACK_03(Ops::stack, 0x000f, 0x00010000, 0x000100f0) {},
   STACK_04(Ops::stack, 0x00100001, 0x00010110, 0x00011110) {},
-  STACK_05(Ops::stack, 0x000f0000, 0x08ce, 0x842108ce) {};
+  STACK_05(Ops::stack, 0x000f0000, 0x08ce, 0x842108ce) {},
+  STACK_06(Ops::stack, 0x000f005f, 0x000a, 0x0000000f) {};
 
   IntUnaryOperator f1;
   IntBinaryOperator f2;

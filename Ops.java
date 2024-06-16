@@ -442,7 +442,7 @@ class Ops {
     for (int layerNum = 0; layerNum < Shape.NUM_LAYERS; ++layerNum) {
       part = (top >>> (4 * layerNum)) & Shape.LAYER_MASK;
       if (part == 0)
-        break;
+        continue;
       // drop pins
       for (int quad = 0; quad < Shape.NUM_QUADS; ++quad) {
         value = (part >>> quad) & Shape.CRYSTAL_MASK;
