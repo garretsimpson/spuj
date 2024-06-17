@@ -1,5 +1,9 @@
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.util.HashSet;
+import java.util.Scanner;
+import java.util.Set;
 
 /**
  * ShapeFile
@@ -7,18 +11,39 @@ import java.io.PrintWriter;
 public class ShapeFile {
 
   static void write(String name, int[] data) {
-    PrintWriter outputStream = null;
-    try {
-      outputStream = new PrintWriter(new FileWriter(name));
+    try (FileWriter file = new FileWriter(name)) {
+      PrintWriter out = new PrintWriter(file);
       for (int shape : data) {
-        outputStream.println(new Shape(shape));
+        out.println(new Shape(shape));
       }
     } catch (Exception e) {
       System.err.printf("Error writing file: %s\n", name);
-    } finally {
-      if (outputStream != null)
-        outputStream.close();
     }
-
   }
+
+  static int[] read(String name) {
+    Set<Integer> dataSet = new HashSet<>();
+    String value;
+    int shape;
+    try (Scanner scan = new Scanner(new FileReader(name))) {
+      scan.useRadix(16);
+      scan.useDelimiter("[\\s+,]");
+      while (scan.hasNext()) {
+        value = scan.next();
+        // System.out.println(value);
+        if (value.startsWith("value")) {
+          shape = scan.nextInt();
+          // System.out.printf("SHAPE: %08x\n", shape);
+          dataSet.add(shape);
+          scan.nextLine();
+        }
+      }
+    } catch (Exception e) {
+      System.err.printf("Error reading file: %s\n", name);
+      System.err.println(e);
+    }
+    System.out.printf("Number of values read: %d\n", dataSet.size());
+    return dataSet.stream().mapToInt(Integer::intValue).sorted().toArray();
+  }
+
 }

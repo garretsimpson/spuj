@@ -1,20 +1,30 @@
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntUnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class Tests {
 
   static Random rng = new Random();
+  static Set<Integer> allShapes = new HashSet<>();
+
+  private IntStream allShapeStream() {
+    return allShapes.stream().mapToInt(Integer::intValue);
+    // .peek(num -> System.out.println(String.format("%08x", num) + " " + Thread.currentThread().getName()));
+  }
 
   static void run() {
     // test1();
-    perf1();
+    // perf1();
     // code1();
+    readFile1();
   }
 
   static void test1() {
@@ -107,6 +117,66 @@ public class Tests {
 
     IntStream.rangeClosed(1, 20).peek(number -> System.out.println(number + " " + Thread.currentThread().getName()))
         .map(x -> -x).parallel().toArray();
+  }
+
+  /* Misc analysis */
+  void Find1() {
+    int[] lefts = allShapeStream().filter(Shape::isLeftHalf).toArray();
+    int[] rights = allShapeStream().filter(Shape::isRightHalf).toArray();
+    Set<Integer> workSet = new HashSet<>(allShapes);
+    int[] shapes;
+    // Get list of all shapes that can be swapped.
+    Set<Integer> swapped = IntStream.of(lefts).mapMulti((left, consumer) -> {
+      for (int right : rights)
+        consumer.accept(Ops.fastSwapRight(left, right));
+    }).boxed().collect(Collectors.toSet());
+    // Remove them from the list of all shapes.
+    workSet.removeAll(swapped);
+    // Filter out the lefts and rights.
+    Set<Integer> halves = new HashSet<>();
+    halves.addAll(IntStream.of(lefts).boxed().collect(Collectors.toSet()));
+    halves.addAll(IntStream.of(lefts).map(Ops::rotateRight).boxed().collect(Collectors.toSet()));
+    halves.addAll(IntStream.of(lefts).map(Ops::rotate180).boxed().collect(Collectors.toSet()));
+    halves.addAll(IntStream.of(lefts).map(Ops::rotateLeft).boxed().collect(Collectors.toSet()));
+    workSet.removeAll(halves);
+    // Display the remaining.
+    shapes = workSet.stream().mapToInt(Integer::intValue).sorted().toArray();
+    Tools.displayShapes(shapes);
+  }
+
+  /* Find all shapes that cannot be made by swapping */
+  void find2() {
+    Ops.Stats.clear();
+    // Find all shapes that can be made by swapping
+    int[] shapes;
+    // Set<Integer> workSet;
+    int[] lefts = allShapeStream().filter(Shape::isLeftHalf).toArray();
+    int[] rights = allShapeStream().filter(Shape::isRightHalf).toArray();
+    // Stream stream = allShapeStream().mapMulti((left, consumer) -> {
+    // for (int right : allShapes)
+    // consumer.accept(Ops.swapRight(left, right));
+    // });
+    IntStream stream = IntStream.of(lefts).mapMulti((left, consumer) -> {
+      for (int right : rights)
+        consumer.accept(Ops.fastSwapRight(left, right));
+    });
+    Set<Integer> allSwapKeys = stream.parallel().filter(s -> (s == Ops.keyValue(s))).boxed()
+        .collect(Collectors.toSet());
+    shapes = allShapeStream().filter(s -> !allSwapKeys.contains(Ops.keyValue(s))).parallel().toArray();
+    Tools.displayShapes(shapes);
+  }
+
+  void writeTest1() {
+    final String filename = "test1.txt";
+    System.out.printf("Writing file: %s\n", filename);
+    ShapeFile.write(filename, allShapeStream().sorted().toArray());
+  }
+
+  static void readFile1() {
+    String name = "allShapes1.txt";
+    System.out.printf("Read file: %s\n", name);
+    int[] shapes = ShapeFile.read(name);
+    Tools.displayShapes(shapes);
   }
 
 }
