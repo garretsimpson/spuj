@@ -373,10 +373,11 @@ Time: 1915
 cut: 35280, swap: 32357, stack: 2809592, rotate: 35280, pinPush 35280, crystal 35280, collapse: 56579
 
 Further optimization might be possible:
-- Optimize stack op.
+- Optimize stack op.  DONE (2x faster)
 - Optimize dropPin and dropPart.
+- Use pre-filters instead of fastSwap and fastStack.  DONE (8x faster)
 - Keep track of which shapes were used rather than build a set of new shapes every iter.
-- Use pre-filters instead of fastSwap and fastStack.
+- Or maybe store an object with a used flag and a build op.
 
 I think there might be a bug in dropPart and dropPin when dropping from a layer that is occupied.
 For example, stack a pin on a 4-layer solid shape.
@@ -633,3 +634,5 @@ Number of values read: 35280
 1-layer 255 54
 2-layer 35280 5091
 
+TODO
+- Find impossible shapes, filter out invalid shapes (gap layers)

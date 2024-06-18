@@ -23,6 +23,22 @@ public class ShapeFile {
     System.out.printf("Number of values written: %d\n", data.length);
   }
 
+  static void write(String name, Set<Integer> data) {
+    System.out.printf("Writing file: %s\n", name);
+    try (FileWriter file = new FileWriter(name)) {
+      int value;
+      PrintWriter out = new PrintWriter(file);
+      for (long i = 0; i <= 0xffffffffl; ++i) {
+        value = (int) i;
+        if (data.contains(value))
+          out.println(new Shape(value));
+      }
+    } catch (Exception e) {
+      System.err.printf("Error writing file: %s\n", name);
+    }
+    System.out.printf("Number of values written: %d\n", data.size());
+  }
+
   static Set<Integer> read(String name) {
     System.out.printf("Reading file: %s\n", name);
     Set<Integer> dataSet = new HashSet<>();

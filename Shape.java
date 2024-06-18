@@ -163,7 +163,7 @@ public class Shape {
   /**
    * Returns an array of shapes, layers from bottom to top
    * 
-   * @param code
+   * @param value
    * @return
    */
   public static int[] toLayers(int value) {
@@ -179,28 +179,28 @@ public class Shape {
     return result;
   }
 
-  static boolean hasCrystal(int shape) {
-    return (v1(shape) & v2(shape)) != 0;
+  static boolean hasCrystal(int value) {
+    return (v1(value) & v2(value)) != 0;
   }
 
-  static boolean isOneLayer(int shape) {
-    return (shape & LAYER_MASK) == shape;
+  static boolean isOneLayer(int value) {
+    return (value & LAYER_MASK) == value;
   }
 
-  static boolean isLeftHalf(int shape) {
-    int v1 = v1(shape);
-    int v2 = v2(shape);
+  static boolean isLeftHalf(int value) {
+    int v1 = v1(value);
+    int v2 = v2(value);
     return ((v1 | v2) & 0x3333) == 0;
   }
 
-  static boolean isRightHalf(int shape) {
-    int v1 = v1(shape);
-    int v2 = v2(shape);
+  static boolean isRightHalf(int value) {
+    int v1 = v1(value);
+    int v2 = v2(value);
     return ((v1 | v2) & 0xcccc) == 0;
   }
 
-  static boolean isKeyShape(int shape) {
-    return shape == Ops.keyValue(shape);
+  static boolean isKeyShape(int value) {
+    return value == Ops.keyValue(value);
   }
 
 }

@@ -367,8 +367,8 @@ class Ops {
   }
 
   static int fastSwapRight(int left, int right) {
-    if (!Shape.isLeftHalf(left) || !Shape.isRightHalf(right))
-      return 0;
+    // if (!Shape.isLeftHalf(left) || !Shape.isRightHalf(right))
+    //   return 0;
     Stats.SWAP.increment();
     return left | right;
   }

@@ -18,7 +18,10 @@ public class Constructor {
 
   private IntStream allShapeStream() {
     return allShapes.stream().mapToInt(Integer::intValue);
-    // .peek(num -> System.out.println(String.format("%08x", num) + " " + Thread.currentThread().getName()));
+  }
+
+  private IntStream oldShapeStream(Set<Integer> newShapes) {
+    return allShapeStream().filter(s -> !newShapes.contains(s));
   }
 
   private static final IntUnaryOperator[] ONE_OPS_ALL = { Ops::rotateRight, Ops::rotate180, Ops::rotateLeft,
@@ -103,6 +106,10 @@ public class Constructor {
     displayResults();
   }
 
+  private boolean oneLayerNoCrystal(int shape) {
+    return Shape.isOneLayer(shape) && !Shape.hasCrystal(shape);
+  }
+
   /**
    * makeShapes
    * 
@@ -116,23 +123,30 @@ public class Constructor {
       streams.add(IntStream.of(input).map(op));
     }
 
-    /* TODO: Add pre-filters for each op. */
-    /* For example, swap only half shapes and stack only one-layer, non-crystal shapes. */
     System.out.printf("TWO_OPS %d %d %d > %d\n", TWO_OPS.length, input.length, allShapes.size(),
         1l * TWO_OPS.length * input.length * (input.length + 2 * (allShapes.size() - input.length)));
-    /* TODO: Might be better to keep old shape list rather than recreate it every time. */
-    /* Or maybe store an object with a used flag and a build op */
-    Set<Integer> inputShapes = IntStream.of(input).boxed().collect(Collectors.toSet());
-    for (IntBinaryOperator op : TWO_OPS) {
-      streams.add(allShapeStream().mapMulti((s1, consumer) -> {
-        for (int s2 : input)
-          consumer.accept(op.applyAsInt(s1, s2));
-      }));
-      streams.add(allShapeStream().filter(s -> !inputShapes.contains(s)).mapMulti((s2, consumer) -> {
-        for (int s1 : input)
-          consumer.accept(op.applyAsInt(s1, s2));
-      }));
-    }
+    /* TODO: keep track of old shapes, or use flag on all shapes */
+    Set<Integer> newShapes = IntStream.of(input).boxed().collect(Collectors.toSet());
+    /* TODO: use the same variable for all of these, might be able to free it sooner */
+    int[] rights = IntStream.of(input).filter(Shape::isRightHalf).toArray();
+    int[] lefts = IntStream.of(input).filter(Shape::isLeftHalf).toArray();
+    int[] tops = IntStream.of(input).filter(this::oneLayerNoCrystal).toArray();
+    streams.add(allShapeStream().filter(Shape::isLeftHalf).mapMulti((s1, consumer) -> {
+      for (int s2 : rights)
+        consumer.accept(Ops.fastSwapRight(s1, s2));
+    }));
+    streams.add(oldShapeStream(newShapes).filter(Shape::isRightHalf).mapMulti((s2, consumer) -> {
+      for (int s1 : lefts)
+        consumer.accept(Ops.fastSwapRight(s1, s2));
+    }));
+    streams.add(allShapeStream().filter(this::oneLayerNoCrystal).mapMulti((s1, consumer) -> {
+      for (int s2 : input)
+        consumer.accept(Ops.stack(s1, s2));
+    }));
+    streams.add(oldShapeStream(newShapes).mapMulti((s2, consumer) -> {
+      for (int s1 : tops)
+        consumer.accept(Ops.stack(s1, s2));
+    }));
 
     IntStream stream = streams.stream().flatMapToInt(s -> s).filter(this::maxLayers).filter(this::isNew).distinct();
     return stream.parallel().toArray();
@@ -164,7 +178,6 @@ public class Constructor {
       // System.out.println("Output shapes");
       // displayShapes(newShapes);
     }
-    displayResults();
   }
 
   void displayResults() {
@@ -177,6 +190,11 @@ public class Constructor {
     System.out.printf("noCrystal: %d\n", noCrystal.length);
     System.out.printf("oneLayerNoCrystal: %d\n", oneLayerNoCrystal.length);
     System.out.printf("Number: %d\n", allShapes.size());
+  }
+
+  void saveResults() {
+    final String RESULTS = "shapes.txt";
+    ShapeFile.write(RESULTS, allShapes);
   }
 
 }
