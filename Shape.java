@@ -199,4 +199,8 @@ public class Shape {
     return ((v1 | v2) & 0xcccc) == 0;
   }
 
+  static boolean isKeyShape(int shape) {
+    return shape == Ops.keyValue(shape);
+  }
+
 }

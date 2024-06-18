@@ -11,6 +11,7 @@ import java.util.Set;
 public class ShapeFile {
 
   static void write(String name, int[] data) {
+    System.out.printf("Writing file: %s\n", name);
     try (FileWriter file = new FileWriter(name)) {
       PrintWriter out = new PrintWriter(file);
       for (int shape : data) {
@@ -19,9 +20,11 @@ public class ShapeFile {
     } catch (Exception e) {
       System.err.printf("Error writing file: %s\n", name);
     }
+    System.out.printf("Number of values written: %d\n", data.length);
   }
 
-  static int[] read(String name) {
+  static Set<Integer> read(String name) {
+    System.out.printf("Reading file: %s\n", name);
     Set<Integer> dataSet = new HashSet<>();
     String value;
     int shape;
@@ -43,7 +46,7 @@ public class ShapeFile {
       System.err.println(e);
     }
     System.out.printf("Number of values read: %d\n", dataSet.size());
-    return dataSet.stream().mapToInt(Integer::intValue).sorted().toArray();
+    return dataSet;
   }
 
 }

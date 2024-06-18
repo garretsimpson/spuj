@@ -592,7 +592,7 @@ cut: 255, swap: 225, stack: 20400, rotate: 255, pinPush 255, crystal 255, collap
 This seems to indicate there are 30 shapes that require a stacker.  I thought all 1-layer could use a swapper.
 Need to find some examples.
 
-For 1-layer, ut's the shapes that swapper can't make, like half empty.  Need to use a cutter?
+For 1-layer, it's the shapes that swapper can't make, like half empty.  Need to use a cutter?
 
 The 30 is the lefts and the rights.
 
@@ -600,7 +600,36 @@ Can you make a half shape with the swapper?
 I think so, as long as both inputs have something.
 But better to use a "smart swapper" that uses a cutter (one input) if needed.
 
-All shapes w/swap
-Number of shapes: 3168
-left/right w/fastSwap
-Number of shapes: 3840
+Verified that fastSwap (with only left and right halves) makes the same list as swapping all shapes.
+Needed to add left and right halves to the output list.
+There are 180 left/right halves, so that's (180 * 180) + (2 * 180) = 180 * (180 + 2) = 32,760 shapes.
+
+Note: swap can output the zero shape, so might need to filter that out.
+
+Which shapes can't be made by swapper?
+35,280 - 32,760 = 2520
+
+Check all rotations of swap output, using key shapes to filter.
+3168 shapes that can't be made by swapper.
+
+Why is it different?
+
+This appears in both the swap list and the not swap list...
+value: 00000076, code: --RrRr--:RgRgRg--:--------:--------
+
+That can be made by the swapper.
+There are swap shapes that are not key values.
+Fixed it by first finding the keyValues of all the swap shapes and then using that to filter all shapes.
+
+Writing file: result.txt
+Number of values written: 264
+
+Key shapes...
+Writing file: result.txt
+Number of values written: 45
+
+Reading file: allShapes2.txt
+Number of values read: 35280
+1-layer 255 54
+2-layer 35280 5091
+

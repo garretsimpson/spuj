@@ -17,12 +17,12 @@ public class Tools {
     System.out.println();
   }
 
-  static void displayAllShapes(Set<Integer> allShapes) {
+  static void displayShapes(Set<Integer> shapes) {
     int shape;
     System.out.println("All shapes");
     for (long i = 0; i <= 0xffffffffl; ++i) {
       shape = (int) i;
-      if (allShapes.contains(shape))
+      if (shapes.contains(shape))
         System.out.println(new Shape(shape));
     }
     System.out.println();

@@ -10,21 +10,75 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+/**
+ * Tests
+ * 
+ * Misc methods for testing
+ */
 public class Tests {
 
-  static Random rng = new Random();
-  static Set<Integer> allShapes = new HashSet<>();
+  static final String ALL_SHAPES_FILENAME_1 = "allShapes1.txt";
+  static final String ALL_SHAPES_FILENAME_2 = "allShapes2.txt";
 
-  private IntStream allShapeStream() {
+  static Random rng = new Random();
+  static Set<Integer> allShapes;
+
+  private static IntStream allShapeStream() {
     return allShapes.stream().mapToInt(Integer::intValue);
     // .peek(num -> System.out.println(String.format("%08x", num) + " " + Thread.currentThread().getName()));
   }
 
   static void run() {
-    // test1();
-    // perf1();
-    // code1();
-    readFile1();
+    readAllShapes();
+    shapeStats();
+  }
+
+  private static void readAllShapes() {
+    allShapes = ShapeFile.read(ALL_SHAPES_FILENAME_2);
+  }
+
+  static void shapeStats() {
+    int[] layer1 = allShapeStream().filter(Shape::isOneLayer).toArray();
+    int[] layer2 = allShapeStream().toArray();
+    int[] keyShapes1 = IntStream.of(layer1).filter(Shape::isKeyShape).toArray();
+    int[] keyShapes2 = allShapeStream().filter(Shape::isKeyShape).toArray();
+    System.out.printf("1-layer %d %d\n", layer1.length, keyShapes1.length);
+    System.out.printf("2-layer %d %d\n", layer2.length, keyShapes2.length);
+  }
+
+  static void makeSwapShapes() {
+    final String SWAP_NAME = "swap.txt";
+    IntStream stream = allShapeStream().mapMulti((left, consumer) -> {
+      for (int right : allShapes)
+        consumer.accept(Ops.swapRight(left, right));
+    });
+    ShapeFile.write(SWAP_NAME, stream.distinct().sorted().parallel().toArray());
+  }
+
+  static void makeFastSwapShapes() {
+    final String FASTSWAP_NAME = "fastswap.txt";
+    int[] lefts = allShapeStream().filter(Shape::isLeftHalf).toArray();
+    int[] rights = allShapeStream().filter(Shape::isRightHalf).toArray();
+    IntStream stream = IntStream.of(lefts).mapMulti((left, consumer) -> {
+      for (int right : rights)
+        consumer.accept(Ops.fastSwapRight(left, right));
+    });
+    stream = Arrays.asList(IntStream.of(lefts), IntStream.of(rights), stream).stream().flatMapToInt(s -> s);
+    ShapeFile.write(FASTSWAP_NAME, stream.distinct().sorted().parallel().toArray());
+  }
+
+  static void filterOutSwap() {
+    final String FASTSWAP_NAME = "fastswap.txt";
+    final String RESULT_NAME = "result.txt";
+    // Get all swap shapes
+    Set<Integer> swapShapes = ShapeFile.read(FASTSWAP_NAME);
+    // Convert to key values
+    Set<Integer> keyShapes = swapShapes.stream().map(Ops::keyValue).distinct().collect(Collectors.toSet());
+    // Filter out swap shapes
+    IntStream stream = allShapeStream().filter(s -> !keyShapes.contains(Ops.keyValue(s)));
+    // Convert to key values
+    stream = stream.map(Ops::keyValue).distinct();
+    ShapeFile.write(RESULT_NAME, stream.sorted().parallel().toArray());
   }
 
   static void test1() {
@@ -172,11 +226,11 @@ public class Tests {
     ShapeFile.write(filename, allShapeStream().sorted().toArray());
   }
 
-  static void readFile1() {
+  static void readTest1() {
     String name = "allShapes1.txt";
     System.out.printf("Read file: %s\n", name);
-    int[] shapes = ShapeFile.read(name);
-    Tools.displayShapes(shapes);
+    Set<Integer> shapeSet = ShapeFile.read(name);
+    Tools.displayShapes(shapeSet);
   }
 
 }
