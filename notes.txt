@@ -636,3 +636,14 @@ Number of values read: 35280
 
 TODO
 - Find impossible shapes, filter out invalid shapes (gap layers)
+
+Writing file: impShapes.txt
+Number of values written: 30000
+
+Exactly 30,000 impossible 2-layer shapes
+Looks like most of them are either floating layers, or pins over gaps.
+Should filter those out and key map it.
+
+Filter out more floating parts...
+- pins over gaps
+- pin is same as gap on top layer (can't support adjacent solids)

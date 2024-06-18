@@ -179,6 +179,33 @@ public class Shape {
     return result;
   }
 
+  public static int layerCount(int value) {
+    value = v1(value) | v2(value);
+    if (value == 0)
+      return 0;
+    else if (value <= 0xf)
+      return 1;
+    else if (value <= 0xff)
+      return 2;
+    else if (value <= 0xfff)
+      return 3;
+    else
+      return 4;
+  }
+
+  public static boolean hasGap(int value) {
+    int numLayers = layerCount(value);
+    for (int num = 0; num < numLayers - 1; ++num) {
+      if ((value & (LAYER_MASK << 4 * num)) == 0)
+        return true;
+    }
+    return false;
+  }
+
+  public static boolean isValid(int value) {
+    return (value != 0) && (!hasGap(value));
+  }
+
   static boolean hasCrystal(int value) {
     return (v1(value) & v2(value)) != 0;
   }

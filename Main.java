@@ -14,9 +14,9 @@ public class Main {
 
     // ShapeTests.run();
     // OpTests.run();
-    // Tests.run();
+    Tests.run();
 
-    makeShapes();
+    // makeShapes();
   }
 
   static void makeShapes() {

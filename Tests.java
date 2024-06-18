@@ -20,6 +20,8 @@ public class Tests {
   static final String ALL_SHAPES_FILENAME_1 = "allShapes1.txt";
   static final String ALL_SHAPES_FILENAME_2 = "allShapes2.txt";
 
+  private static final int MAX_LAYERS = 2;
+
   static Random rng = new Random();
   static Set<Integer> allShapes;
 
@@ -31,6 +33,7 @@ public class Tests {
   static void run() {
     readAllShapes();
     shapeStats();
+    findImpossibleShapes();
   }
 
   private static void readAllShapes() {
@@ -44,6 +47,35 @@ public class Tests {
     int[] keyShapes2 = allShapeStream().filter(Shape::isKeyShape).toArray();
     System.out.printf("1-layer %d %d\n", layer1.length, keyShapes1.length);
     System.out.printf("2-layer %d %d\n", layer2.length, keyShapes2.length);
+  }
+
+  static boolean hasFloating(int shape) {
+    int layer1 = shape & Shape.LAYER_MASK;
+    int layer2 = (shape >> 4) & Shape.LAYER_MASK;
+    layer1 = Shape.v1(layer1) | Shape.v2(layer1);
+    layer2 = Shape.v1(layer2) | Shape.v2(layer2);
+
+    return (layer1 & layer2) == 0;
+  }
+
+  static void findImpossibleShapes() {
+    final String IMP_SHAPES_NAME = "impShapes.txt";
+    Set<Integer> shapeSet = new HashSet<>();
+    int shape;
+    for (long i = 0; i <= 0xffffffffl; ++i) {
+      shape = (int) i;
+      if (Shape.layerCount(shape) > MAX_LAYERS)
+        continue;
+      if (!Shape.isValid(shape))
+        continue;
+      if (allShapes.contains(shape))
+        continue;
+      if (hasFloating(shape))
+        continue;
+      shapeSet.add(shape);
+    }
+    int[] shapes = shapeSet.stream().mapToInt(Integer::intValue).filter(Shape::isKeyShape).sorted().toArray();
+    ShapeFile.write(IMP_SHAPES_NAME, shapes);
   }
 
   static void makeSwapShapes() {

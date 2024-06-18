@@ -37,9 +37,7 @@ public class Constructor {
   private boolean maxLayers(int shape) {
     if (shape == 0)
       return false;
-    int v1 = Shape.v1(shape);
-    int v2 = Shape.v2(shape);
-    return (v1 | v2) < (1 << (4 * MAX_LAYERS));
+    return (Shape.v1(shape) | Shape.v2(shape)) < (1 << (4 * MAX_LAYERS));
   }
 
   /**

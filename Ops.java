@@ -368,7 +368,7 @@ class Ops {
 
   static int fastSwapRight(int left, int right) {
     // if (!Shape.isLeftHalf(left) || !Shape.isRightHalf(right))
-    //   return 0;
+    // return 0;
     Stats.SWAP.increment();
     return left | right;
   }
@@ -419,9 +419,7 @@ class Ops {
     Stats.STACK.increment();
 
     // break all crystals on top
-    int v1 = Shape.v1(top);
-    int v2 = Shape.v2(top);
-    top &= ~((v1 & v2) * Shape.CRYSTAL_MASK);
+    top &= ~((Shape.v1(top) & Shape.v2(top)) * Shape.CRYSTAL_MASK);
 
     int part, value;
     for (int layerNum = 0; layerNum < Shape.NUM_LAYERS; ++layerNum) {
