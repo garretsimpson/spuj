@@ -19,25 +19,37 @@ public class Tests {
 
   static final String ALL_SHAPES_FILENAME_1 = "allShapes1.txt";
   static final String ALL_SHAPES_FILENAME_2 = "allShapes2.txt";
+  static final String IMP_SHAPES_FILENAME_1 = "impShapes1.txt";
+  static final String IMP_SHAPES_FILENAME_2 = "impShapes2.txt";
+
+  static final int[] FLOAT_MASKS = { 0b01110010, 0b10110001, 0b11011000, 0b11100100 };
+  static final int[] FLOAT_VALUE = { 0b00100000, 0b00010000, 0b10000000, 0b01000000 };
 
   private static final int MAX_LAYERS = 2;
 
   static Random rng = new Random();
-  static Set<Integer> allShapes;
+  static Set<Integer> allShapes, impShapes;
 
   private static IntStream allShapeStream() {
     return allShapes.stream().mapToInt(Integer::intValue);
     // .peek(num -> System.out.println(String.format("%08x", num) + " " + Thread.currentThread().getName()));
   }
 
-  static void run() {
-    readAllShapes();
-    shapeStats();
-    findImpossibleShapes();
+  private static IntStream impShapeStream() {
+    return impShapes.stream().mapToInt(Integer::intValue);
   }
 
-  private static void readAllShapes() {
+  static void run() {
+    loadShapes();
+    shapeStats();
+    // findImpossibleShapes();
+    filterPossibleShapes();
+    filterImpossibleShapes();
+  }
+
+  private static void loadShapes() {
     allShapes = ShapeFile.read(ALL_SHAPES_FILENAME_2);
+    impShapes = ShapeFile.read(IMP_SHAPES_FILENAME_2);
   }
 
   static void shapeStats() {
@@ -49,32 +61,106 @@ public class Tests {
     System.out.printf("2-layer %d %d\n", layer2.length, keyShapes2.length);
   }
 
+  static boolean hasFloat(int shape) {
+    shape = Shape.v1(shape);
+    // shape = Shape.v1(shape) | Shape.v2(shape);
+    int mask, value;
+    for (int layer = 0; layer < 3; ++layer) {
+      for (int i = 0; i < FLOAT_MASKS.length; ++i) {
+        mask = FLOAT_MASKS[i] << (4 * layer);
+        value = FLOAT_VALUE[i] << (4 * layer);
+        if ((shape & mask) == value)
+          return true;
+      }
+    }
+    return false;
+  }
+
+  static boolean canSwap(int shape) {
+    int shape1 = shape;
+    int value1 = Ops.swapRight(shape1, shape1);
+    int shape2 = Ops.rotateRight(shape);
+    int value2 = Ops.swapRight(shape2, shape2);
+    return (value1 == shape1) && (value2 == shape2);
+  }
+
+  /* TODO: Some of these functions only work for 2-layer shapes */
+
+  static boolean crystalOverGap(int shape) {
+    int layer1 = shape & Shape.LAYER_MASK;
+    int layer2 = (shape >> 4) & Shape.LAYER_MASK;
+    int gaps = ~Shape.v1(layer1) & ~Shape.v2(layer1);
+    int crystals = Shape.v1(layer2) & Shape.v2(layer2);
+
+    return (gaps & crystals) != 0;
+  }
+
+  static boolean crystalOverPin(int shape) {
+    int layer1 = shape & Shape.LAYER_MASK;
+    int layer2 = (shape >> 4) & Shape.LAYER_MASK;
+    int pins = ~Shape.v1(layer1) & Shape.v2(layer1);
+    int crystals = Shape.v1(layer2) & Shape.v2(layer2);
+
+    return (pins & crystals) != 0;
+  }
+
+  static boolean pinOverGap(int shape) {
+    int layer1 = shape & Shape.LAYER_MASK;
+    int layer2 = (shape >> 4) & Shape.LAYER_MASK;
+    int gaps = ~Shape.v1(layer1) & ~Shape.v2(layer1);
+    int pins = ~Shape.v1(layer2) & Shape.v2(layer2);
+
+    return (gaps & pins) != 0;
+  }
+
   static boolean hasFloating(int shape) {
     int layer1 = shape & Shape.LAYER_MASK;
     int layer2 = (shape >> 4) & Shape.LAYER_MASK;
+    int pins = ~Shape.v1(layer2) & Shape.v2(layer2);
     layer1 = Shape.v1(layer1) | Shape.v2(layer1);
     layer2 = Shape.v1(layer2) | Shape.v2(layer2);
+    layer2 &= ~pins; // treat pins as gaps on top
 
     return (layer1 & layer2) == 0;
   }
 
   static void findImpossibleShapes() {
-    final String IMP_SHAPES_NAME = "impShapes.txt";
     Set<Integer> shapeSet = new HashSet<>();
     int shape;
     for (long i = 0; i <= 0xffffffffl; ++i) {
       shape = (int) i;
       if (Shape.layerCount(shape) > MAX_LAYERS)
         continue;
-      if (!Shape.isValid(shape))
-        continue;
       if (allShapes.contains(shape))
-        continue;
-      if (hasFloating(shape))
         continue;
       shapeSet.add(shape);
     }
-    int[] shapes = shapeSet.stream().mapToInt(Integer::intValue).filter(Shape::isKeyShape).sorted().toArray();
+    int[] shapes = shapeSet.stream().mapToInt(Integer::intValue).sorted().toArray();
+    ShapeFile.write(IMP_SHAPES_FILENAME_2, shapes);
+  }
+
+  static void filterPossibleShapes() {
+    final String POS_SHAPES_NAME = "posShapes.txt";
+
+    IntStream stream = allShapeStream();
+    // stream = stream.filter(Tests::crystalOverGap);
+    // int[] shapes = stream.sorted().toArray();
+    int[] shapes = stream.filter(Shape::isKeyShape).sorted().toArray();
+    ShapeFile.write(POS_SHAPES_NAME, shapes);
+  }
+
+  static void filterImpossibleShapes() {
+    final String IMP_SHAPES_NAME = "impShapes.txt";
+
+    IntStream stream = impShapeStream();
+    // stream = stream.filter(s -> !Shape.isValid(s));
+    // stream = stream.filter(Tests::crystalOverPin);
+    // stream = stream.filter(s -> !Tests.hasFloat(s));
+    // stream = stream.filter(s -> !Tests.hasFloating(s));
+    // stream = stream.filter(s -> !Tests.pinOverGap(s));
+    // stream = stream.filter(s -> !Tests.crystalOverGap(s));
+    // int[] shapes = stream.sorted().toArray();
+    int[] shapes = stream.filter(Shape::isKeyShape).sorted().toArray();
     ShapeFile.write(IMP_SHAPES_NAME, shapes);
   }
 

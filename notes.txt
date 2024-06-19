@@ -634,8 +634,13 @@ Number of values read: 35280
 1-layer 255 54
 2-layer 35280 5091
 
+2-layer possible: 35280
+2-layer impossible: 30256
+total: 35536 (2^16) correct
+
 TODO
 - Find impossible shapes, filter out invalid shapes (gap layers)
+- Find possible crystals over pins, crystals over gaps
 
 Writing file: impShapes.txt
 Number of values written: 30000
@@ -647,3 +652,22 @@ Should filter those out and key map it.
 Filter out more floating parts...
 - pins over gaps
 - pin is same as gap on top layer (can't support adjacent solids)
+
+crystal over pins
+possible    9571  1336
+impossible  5340   720
+
+Looking at impossible shapes.
+4225 key impossible shapes
+
+- Fitler pins over gaps
+- Filter out all floating (as if pins are gaps)
+
+1203 key shapes found.  Examples...
+value: 00100032, code: --Rr----:cgRg----:--------:--------
+value: 00110070, code: P-------:cgRgRg--:--------:--------
+value: 001100b0, code: P-------:cgRg--Rg:--------:--------
+
+The first one has a crystal over a gap.  I know it is possible to have a gap directly under a crystal, but I think it's impossible to have a gap all the way down to the base. 
+The next two have a crystal supporting two solid quarters.  These are impossible because it is impossible to swap a floating part. 
+I think the check is to imagine cutting the part (and the 90 degree rotation of the part).  If something collapses in both cases, then it is impossible.

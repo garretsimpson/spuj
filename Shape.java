@@ -171,8 +171,7 @@ public class Shape {
     int v1 = v1(value);
     int v2 = v2(value);
     for (int i = 0; i < NUM_LAYERS; ++i) {
-      value = ((v2 & 0xf) << 4) | (v1 & 0xf);
-      result[i] = value;
+      result[i] = ((v2 & 0xf) << 4) | (v1 & 0xf);
       v1 >>>= 4;
       v2 >>>= 4;
     }
