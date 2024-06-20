@@ -207,7 +207,7 @@ public class Constructor {
   }
 
   void saveResults() {
-    final String RESULTS = "shapes.txt";
+    final String RESULTS = "data/shapes.txt";
     ShapeFile.write(RESULTS, allShapes);
   }
 

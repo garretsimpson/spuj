@@ -17,12 +17,12 @@ import java.util.stream.Stream;
  */
 public class Tests {
 
-  static final String ALL_SHAPES_FILENAME_1 = "allShapes1.txt";
-  static final String ALL_SHAPES_FILENAME_2 = "allShapes2.txt";
-  static final String ALL_SHAPES_FILENAME_3 = "allShapes3.txt";
-  static final String IMP_SHAPES_FILENAME_1 = "impShapes1.txt";
-  static final String IMP_SHAPES_FILENAME_2 = "impShapes2.txt";
-  static final String IMP_SHAPES_FILENAME_3 = "impShapes3.txt";
+  static final String ALL_SHAPES_FILENAME_1 = "data/allShapes1.txt";
+  static final String ALL_SHAPES_FILENAME_2 = "data/allShapes2.txt";
+  static final String ALL_SHAPES_FILENAME_3 = "data/allShapes3.txt";
+  static final String IMP_SHAPES_FILENAME_1 = "data/impShapes1.txt";
+  static final String IMP_SHAPES_FILENAME_2 = "data/impShapes2.txt";
+  static final String IMP_SHAPES_FILENAME_3 = "data/impShapes3.txt";
 
   static final int[] FLOAT_MASKS = { 0b01110010, 0b10110001, 0b11011000, 0b11100100 };
   static final int[] FLOAT_VALUE = { 0b00100000, 0b00010000, 0b10000000, 0b01000000 };
@@ -154,7 +154,7 @@ public class Tests {
   }
 
   static void filterPossibleShapes() {
-    final String POS_SHAPES_NAME = "posShapes.txt";
+    final String POS_SHAPES_NAME = "data/posShapes.txt";
 
     IntStream stream = allShapeStream();
     stream = stream.filter(s -> Shape.layerCount(s) == 3);
@@ -166,7 +166,7 @@ public class Tests {
   }
 
   static void filterImpossibleShapes() {
-    final String IMP_SHAPES_NAME = "impShapes.txt";
+    final String IMP_SHAPES_NAME = "data/impShapes.txt";
 
     IntStream stream = impShapeStream();
     // stream = stream.filter(s -> !Shape.isValid(s));
@@ -190,7 +190,7 @@ public class Tests {
   }
 
   static void makeFastSwapShapes() {
-    final String FASTSWAP_NAME = "fastswap.txt";
+    final String FASTSWAP_NAME = "data/fastswap.txt";
     int[] lefts = allShapeStream().filter(Shape::isLeftHalf).toArray();
     int[] rights = allShapeStream().filter(Shape::isRightHalf).toArray();
     IntStream stream = IntStream.of(lefts).mapMulti((left, consumer) -> {
@@ -202,8 +202,8 @@ public class Tests {
   }
 
   static void filterOutSwap() {
-    final String FASTSWAP_NAME = "fastswap.txt";
-    final String RESULT_NAME = "result.txt";
+    final String FASTSWAP_NAME = "data/fastswap.txt";
+    final String RESULT_NAME = "data/result.txt";
     // Get all swap shapes
     Set<Integer> swapShapes = ShapeFile.read(FASTSWAP_NAME);
     // Convert to key values
@@ -355,13 +355,13 @@ public class Tests {
   }
 
   void writeTest1() {
-    final String filename = "test1.txt";
+    final String filename = "data/test1.txt";
     System.out.printf("Writing file: %s\n", filename);
     ShapeFile.write(filename, allShapeStream().sorted().toArray());
   }
 
   static void readTest1() {
-    String name = "allShapes1.txt";
+    String name = "data/allShapes1.txt";
     System.out.printf("Read file: %s\n", name);
     Set<Integer> shapeSet = ShapeFile.read(name);
     Tools.displayShapes(shapeSet);
