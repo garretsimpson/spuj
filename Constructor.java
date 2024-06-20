@@ -15,6 +15,8 @@ public class Constructor {
   private static final int MAX_ITERS = 100;
   private static final int MAX_LAYERS = 3;
 
+  final String RESULTS = "data/shapes.txt";
+
   private Set<Integer> allShapes = new HashSet<>();
 
   private IntStream allShapeStream() {
@@ -100,6 +102,10 @@ public class Constructor {
 
     newShapes = shapes;
     allShapes.addAll(IntStream.of(newShapes).boxed().collect(Collectors.toSet()));
+
+    ShapeFile.delete(RESULTS);
+    ShapeFile.append(RESULTS, newShapes);
+
     for (int i = 1; i <= MAX_ITERS; ++i) {
       System.out.printf("ITER #%d\n", i);
       // Ops.Stats.clear();
@@ -109,6 +115,7 @@ public class Constructor {
         System.out.printf("DONE\n\n");
         break;
       }
+      ShapeFile.append(RESULTS, newShapes);
       System.out.printf("NEW %d\n\n", newShapes.length);
       allShapes.addAll(IntStream.of(newShapes).boxed().collect(Collectors.toSet()));
 
@@ -207,7 +214,6 @@ public class Constructor {
   }
 
   void saveResults() {
-    final String RESULTS = "data/shapes.txt";
     ShapeFile.write(RESULTS, allShapes);
   }
 

@@ -762,8 +762,8 @@ Number of values written: 176275
 
 TODO
 - space optimization
-- collect to a Set, instead of passing int[]
-- reuse data structures and variable as much as possible
+- collect to a Set, instead of passing int[] - slower and larger
+- reuse data structures and variable as much as possible - not possible when used inside a stream
 
 With flat and pins...
 ITER #20
@@ -796,3 +796,9 @@ cut: 3865587, swap: 3222025, stack: 309246960, rotate: 3865587, pinPush 3865587,
 Yes, you can make all 3-layer shapes with just flats (and no 4th layer)
 It's probably using crystals to make pins.
 
+TODO
+- Append to results file with each iteration
+- run as much of 4-layer as possible
+- find solutions
+- create solutions database
+- update solution viewer
