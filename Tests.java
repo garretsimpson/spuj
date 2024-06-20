@@ -19,13 +19,15 @@ public class Tests {
 
   static final String ALL_SHAPES_FILENAME_1 = "allShapes1.txt";
   static final String ALL_SHAPES_FILENAME_2 = "allShapes2.txt";
+  static final String ALL_SHAPES_FILENAME_3 = "allShapes3.txt";
   static final String IMP_SHAPES_FILENAME_1 = "impShapes1.txt";
   static final String IMP_SHAPES_FILENAME_2 = "impShapes2.txt";
+  static final String IMP_SHAPES_FILENAME_3 = "impShapes3.txt";
 
   static final int[] FLOAT_MASKS = { 0b01110010, 0b10110001, 0b11011000, 0b11100100 };
   static final int[] FLOAT_VALUE = { 0b00100000, 0b00010000, 0b10000000, 0b01000000 };
 
-  private static final int MAX_LAYERS = 2;
+  private static final int MAX_LAYERS = 3;
 
   static Random rng = new Random();
   static Set<Integer> allShapes, impShapes;
@@ -44,25 +46,28 @@ public class Tests {
     shapeStats();
     // findImpossibleShapes();
     filterPossibleShapes();
-    filterImpossibleShapes();
+    // filterImpossibleShapes();
   }
 
   private static void loadShapes() {
-    allShapes = ShapeFile.read(ALL_SHAPES_FILENAME_2);
-    impShapes = ShapeFile.read(IMP_SHAPES_FILENAME_2);
+    allShapes = ShapeFile.read(ALL_SHAPES_FILENAME_3);
+    // impShapes = ShapeFile.read(IMP_SHAPES_FILENAME_3);
   }
 
   static void shapeStats() {
-    int[] layer1 = allShapeStream().filter(Shape::isOneLayer).toArray();
-    int[] layer2 = allShapeStream().toArray();
+    int[] layer1 = allShapeStream().filter(s -> Shape.layerCount(s) == 1).toArray();
+    int[] layer2 = allShapeStream().filter(s -> Shape.layerCount(s) == 2).toArray();
+    int[] layer3 = allShapeStream().filter(s -> Shape.layerCount(s) == 3).toArray();
     int[] keyShapes1 = IntStream.of(layer1).filter(Shape::isKeyShape).toArray();
-    int[] keyShapes2 = allShapeStream().filter(Shape::isKeyShape).toArray();
-    System.out.printf("1-layer %d %d\n", layer1.length, keyShapes1.length);
-    System.out.printf("2-layer %d %d\n", layer2.length, keyShapes2.length);
+    int[] keyShapes2 = IntStream.of(layer2).filter(Shape::isKeyShape).toArray();
+    int[] keyShapes3 = IntStream.of(layer3).filter(Shape::isKeyShape).toArray();
+    System.out.printf("1-layer %10d %10d\n", layer1.length, keyShapes1.length);
+    System.out.printf("2-layer %10d %10d\n", layer2.length, keyShapes2.length);
+    System.out.printf("3-layer %10d %10d\n", layer3.length, keyShapes3.length);
   }
 
   static boolean hasFloat(int shape) {
-    shape = Shape.v1(shape);
+    shape = Shape.v1(shape); // pins as gaps
     // shape = Shape.v1(shape) | Shape.v2(shape);
     int mask, value;
     for (int layer = 0; layer < 3; ++layer) {
@@ -86,13 +91,22 @@ public class Tests {
 
   /* TODO: Some of these functions only work for 2-layer shapes */
 
+  static boolean hasGaps(int shape) {
+    int layer1 = shape & Shape.LAYER_MASK;
+    int layer2 = (shape >> 4) & Shape.LAYER_MASK;
+    int gaps1 = ~Shape.v1(layer1) & ~Shape.v2(layer1) & 0xf;
+    int gaps2 = ~Shape.v1(layer2) & ~Shape.v2(layer2) & 0xf;
+    return (gaps1 | gaps2) != 0;
+  }
+
   static boolean crystalOverGap(int shape) {
     int layer1 = shape & Shape.LAYER_MASK;
     int layer2 = (shape >> 4) & Shape.LAYER_MASK;
-    int gaps = ~Shape.v1(layer1) & ~Shape.v2(layer1);
-    int crystals = Shape.v1(layer2) & Shape.v2(layer2);
+    int layer3 = (shape >> 8) & Shape.LAYER_MASK;
+    int gaps2 = ~Shape.v1(layer2) & ~Shape.v2(layer2);
+    int crystal3 = Shape.v1(layer3) & Shape.v2(layer3);
 
-    return (gaps & crystals) != 0;
+    return (gaps2 & crystal3) != 0;
   }
 
   static boolean crystalOverPin(int shape) {
@@ -136,13 +150,15 @@ public class Tests {
       shapeSet.add(shape);
     }
     int[] shapes = shapeSet.stream().mapToInt(Integer::intValue).sorted().toArray();
-    ShapeFile.write(IMP_SHAPES_FILENAME_2, shapes);
+    ShapeFile.write(IMP_SHAPES_FILENAME_3, shapes);
   }
 
   static void filterPossibleShapes() {
     final String POS_SHAPES_NAME = "posShapes.txt";
 
     IntStream stream = allShapeStream();
+    stream = stream.filter(s -> Shape.layerCount(s) == 3);
+    stream = stream.filter(s -> !Tests.hasGaps(s));
     // stream = stream.filter(Tests::crystalOverGap);
     // int[] shapes = stream.sorted().toArray();
     int[] shapes = stream.filter(Shape::isKeyShape).sorted().toArray();

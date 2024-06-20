@@ -671,3 +671,128 @@ value: 001100b0, code: P-------:cgRg--Rg:--------:--------
 The first one has a crystal over a gap.  I know it is possible to have a gap directly under a crystal, but I think it's impossible to have a gap all the way down to the base. 
 The next two have a crystal supporting two solid quarters.  These are impossible because it is impossible to swap a floating part. 
 I think the check is to imagine cutting the part (and the 90 degree rotation of the part).  If something collapses in both cases, then it is impossible.
+
+Run 3-layers...
+
+Time: 14416
+cut: 3865587, swap: 3222025, stack: 309246960, rotate: 3865587, pinPush 3865587, crystal 3865587, collapse: 7731174
+
+OMG - 14.4 seconds.  Was 16+ hours.
+
+Run 4-layers...
+
+ITER #15
+ONE_OPS 4 50822726 > 203290904
+TWO_OPS 2 50822726 119938943 > 19216597191132320
+NEW 85432162
+
+ITER #16
+ONE_OPS 4 85432162 > 341728648
+TWO_OPS 2 85432162 205371105 > 55583881441927552
+Exception in thread "main" java.lang.OutOfMemoryError
+        at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+        at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:77)
+        at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+        at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:499)
+        at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:480)
+        at java.base/java.util.concurrent.ForkJoinTask.getThrowableException(ForkJoinTask.java:564)
+        at java.base/java.util.concurrent.ForkJoinTask.reportException(ForkJoinTask.java:591)
+        at java.base/java.util.concurrent.ForkJoinTask.invoke(ForkJoinTask.java:689)
+        at java.base/java.util.stream.ReduceOps$ReduceOp.evaluateParallel(ReduceOps.java:927)
+        at java.base/java.util.stream.DistinctOps$1.reduce(DistinctOps.java:64)
+        at java.base/java.util.stream.DistinctOps$1.opEvaluateParallelLazy(DistinctOps.java:110)
+        at java.base/java.util.stream.AbstractPipeline.sourceSpliterator(AbstractPipeline.java:434)
+        at java.base/java.util.stream.AbstractPipeline.evaluateToArrayNode(AbstractPipeline.java:260)
+        at java.base/java.util.stream.IntPipeline.toArray(IntPipeline.java:562)
+        at Constructor.makeShapes2(Constructor.java:151)
+        at Constructor.run2(Constructor.java:168)
+        at Main.makeShapes(Main.java:26)
+        at Main.main(Main.java:19)
+Caused by: java.lang.OutOfMemoryError: Java heap space
+        at java.base/java.util.HashMap.resize(HashMap.java:702)
+        at java.base/java.util.HashMap.putVal(HashMap.java:661)
+        at java.base/java.util.HashMap.put(HashMap.java:610)
+        at java.base/java.util.HashSet.add(HashSet.java:221)
+        at java.base/java.util.stream.DistinctOps$1$$Lambda$48/0x00000222f104d8c8.accept(Unknown Source)
+        at java.base/java.util.stream.ReduceOps$4ReducingSink.accept(ReduceOps.java:220)
+        at java.base/java.util.stream.IntPipeline$1$1.accept(IntPipeline.java:180)
+        at java.base/java.util.stream.IntPipeline$10$1.accept(IntPipeline.java:393)
+        at java.base/java.util.stream.ReferencePipeline$8$1$$Lambda$50/0x00000222f104f2f0.accept(Unknown Source)
+        at java.base/java.util.stream.ForEachOps$ForEachOp$OfInt.accept(ForEachOps.java:204)
+        at Constructor.lambda$32(Constructor.java:142)
+        at Constructor$$Lambda$42/0x00000222f1006550.accept(Unknown Source)
+        at java.base/java.util.stream.IntPipeline$8$1.accept(IntPipeline.java:358)
+        at java.base/java.util.stream.IntPipeline$10$1.accept(IntPipeline.java:393)
+        at java.base/java.util.stream.ReferencePipeline$4$1.accept(ReferencePipeline.java:214)
+        at java.base/java.util.HashMap$KeySpliterator.forEachRemaining(HashMap.java:1707)
+        at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+        at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+        at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:150)
+        at java.base/java.util.stream.ForEachOps$ForEachOp$OfInt.evaluateSequential(ForEachOps.java:188)
+        at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+        at java.base/java.util.stream.IntPipeline.forEach(IntPipeline.java:463)
+        at java.base/java.util.stream.ReferencePipeline$8$1.accept(ReferencePipeline.java:324)
+        at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1625)
+        at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+        at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+        at java.base/java.util.stream.ReduceOps$ReduceTask.doLeaf(ReduceOps.java:960)
+        at java.base/java.util.stream.ReduceOps$ReduceTask.doLeaf(ReduceOps.java:934)
+        at java.base/java.util.stream.AbstractTask.compute(AbstractTask.java:327)
+        at java.base/java.util.concurrent.CountedCompleter.exec(CountedCompleter.java:754)
+        at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+        at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+
+Analyze 3-layer shapes...
+
+1-layer        255         54
+2-layer      35025       5037
+3-layer    3830307     497779
+
+Same number of 2-layer shapes, so no new 2-layers found.
+
+Possible shapes with gap under crystal similar to the one I made...
+value: 02110302, code: P-Rr----:P-------:Rbcb----:--------
+value: 03110302, code: P-Rr----:P-------:cbcb----:--------
+
+First one found...
+value: 01000323, code: RrRr----:--Rg----:cbRb----:--------
+
+Vortex equivalent shapes (no gaps)...
+Number of values written: 176275
+
+TODO
+- space optimization
+- collect to a Set, instead of passing int[]
+- reuse data structures and variable as much as possible
+
+With flat and pins...
+ITER #20
+ONE_OPS 4 32701 > 130804
+TWO_OPS 2 32701 3852879 > 501833273914
+NEW 12708
+
+ITER #21
+ONE_OPS 4 12708 > 50832
+TWO_OPS 2 12708 3865587 > 196172531856
+DONE
+
+Time: 14038
+cut: 3865587, swap: 3222025, stack: 309246960, rotate: 3865587, pinPush 3865587, crystal 3865587, collapse: 7731174
+
+With just flats...
+ITER #20
+ONE_OPS 4 32701 > 130804
+TWO_OPS 2 32701 3852879 > 501833273914
+NEW 12708
+
+ITER #21
+ONE_OPS 4 12708 > 50832
+TWO_OPS 2 12708 3865587 > 196172531856
+DONE
+
+Time: 15399
+cut: 3865587, swap: 3222025, stack: 309246960, rotate: 3865587, pinPush 3865587, crystal 3865587, collapse: 7731174
+
+Yes, you can make all 3-layer shapes with just flats (and no 4th layer)
+It's probably using crystals to make pins.
+
