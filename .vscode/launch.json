@@ -16,7 +16,7 @@
       "request": "launch",
       "mainClass": "Main",
       "projectName": "spuj_6a082ba4",
-      "vmArgs": "-Xmx24G"
+      "vmArgs": "-Xmx30G"
     }
   ]
 }

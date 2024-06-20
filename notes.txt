@@ -802,3 +802,184 @@ TODO
 - find solutions
 - create solutions database
 - update solution viewer
+
+Maybe the Constructor can work in batches.
+Like...
+- read 1M (new) shapes from a file.
+- perform all ops.
+- append to the file.
+- repeat where it left off.
+- need to store all shapes in memory to check for duplicates, but only need one copy.
+- old shapes would be all the known shapes?  every shape up to but not including the new shapes?
+
+Attempt 1:
+- Assume there are 100 old shapes, and batches are 10 shapes each (new shapes).
+- The old shapes are the currently known shapes, but not a complete list of all possible shapes.
+- So read 10, and perform...
+  - One ops on each (newshape)  (10 ops)
+  - Two ops on each (newshape, newshape)  (100 ops)
+  - Two ops on each (oldshape, newshape)  (1000 ops)
+  - Two ops on each (newshape, oldshape)  (1000 ops)
+- If oldshapes contains newshapes, then there are duplicate ops calls.
+- So, newshapes and oldshapes should be disjoint / separate groups.
+
+Attempt 2:
+- Read all known shapes into memory (because we need to check any result/output shapes for duplicate)
+- The file could be read in rounds / chunks / batches of shapes to fit all possible op results in memory.
+- Round 1: (n shapes)
+- Treat the entire file (up to some limit) as the list of input shapes
+- Need to perform all one ops on each, and all two ops on all pairs.
+  - one ops on each (n)    // n
+  - two ops on each (n, n) // n^2
+- that's n^2 + n or n(n+1) ops.
+- All new shapes are appended to the file, but not used in this round.
+- This would find any new shapes for the first n shapes in the file.
+- Rounds would be repeated until there were no new shapes found.
+- Round 2: (m shapes)
+- Treats the rest of the file (up to some limit) as the list of input shapes.
+- Does not need to do one ops (n) or two ops (n,n) on the first n shapes.
+- In this case, n is all shapes up to, but not including, m.
+- Does need to do...
+  - one ops on each (m)    // m
+  - two ops on each (m, m) // m^2
+  - two ops on each (m, n) // n*m
+  - two ops on each (n, m) // n*m
+- basically every two op except each (n, n) // n^2
+- that's m^2 - n^2 + m ops.
+
+Notes
+- I'm inventing both rounds and batches.  Can probably be the same thing.
+- (n+m)^2 = n^2 +2nm + m^2
+- Could probably do the same thing in memory.
+- Why is this not what the code is currently doing?
+- The code is currently doing ...?
+
+Alternative...
+- Store all shapes in a fixed size database
+- Use a large cache (1M or more) of the shapes
+- Read from disk as needed.
+- This would not have all shapes in memory, so can't check for duplicates without reading from disk.
+
+Solution finder
+- The goal is to find a solution for all shapes, perferably a minimum cost solution.
+- A solution is the sequence of operations needed to build the shape from primitive shapes.
+- Each shape only needs to store the one operation that was used to build it.
+- The solution database could be a fixed length binary file:
+  - 2^32 records, index / position would be the shape value
+  - each record would have 5 bytes: op code, shape1, shape2 (optional)
+- Method 1: (op priorty)
+  - Operations would have a preference, try them in order and record the first one found.
+  - Ideally all shapes would be in memory, but would only need store one copy of them.
+  - This would work, and find a solution for all shapes, but does not account for length of the solution.
+- Method 2: (build cost)
+  - Need to try all possible ops for all shapes.
+  - Need to record solution with accumulated cost.
+  - When a lower cost is found, replace the solution.
+  - Not clear if this is correct...
+
+Example:
+- flat solid and pins are the primitive (cost=0)
+- pick one shape
+- if shape is a primitive, then solution is primitive (cost=0), else
+- try all ops (which includes using all other known shapes for 2-input ops).
+  - there might be some shortcuts, like...
+  - try ops in priority order (by cost) and stop when first one found.
+  - need crystal maker to make crystals.
+  - only stacker and pinpusher can add layers.
+  - etc.
+- record solution found with cost += op.cost (cost=1)
+  - op costs will probably be 1 for each, but maybe crystal costs 2?
+
+Notes
+- This will find solutions to all shapes, and the cost will be 0 for primitives or 1 for every other shape.
+- This is because the build found is (in most cases) not from the primitives.
+- Proably need to start with the primitives and build up from there.
+
+
+YEAH! Ran 4-layers to completion
+...
+ITER #15
+ONE_OPS 4 50822726 > 203290904
+TWO_OPS 2 50822726 119938943 > 19216597191132320
+Writing file: data/shapes.txt
+Number of values written: 85432162
+NEW 85432162
+
+ITER #16
+ONE_OPS 4 85432162 > 341728648
+TWO_OPS 2 85432162 205371105 > 55583881441927552
+Writing file: data/shapes.txt
+Number of values written: 70384893
+NEW 70384893
+
+ITER #17
+ONE_OPS 4 70384893 > 281539572
+TWO_OPS 2 70384893 275755998 > 67728159328109958
+Writing file: data/shapes.txt
+Number of values written: 26692538
+NEW 26692538
+
+ITER #18
+ONE_OPS 4 26692538 > 106770152
+TWO_OPS 2 26692538 302448536 > 30867492991134584
+Writing file: data/shapes.txt
+Number of values written: 22536443
+NEW 22536443
+
+ITER #19
+ONE_OPS 4 22536443 > 90145772
+TWO_OPS 2 22536443 324984979 > 28280239294174290
+Writing file: data/shapes.txt
+Number of values written: 14062101
+NEW 14062101
+
+ITER #20
+ONE_OPS 4 14062101 > 56248404
+TWO_OPS 2 14062101 339047080 > 18675371761791918
+Writing file: data/shapes.txt
+Number of values written: 5398979
+NEW 5398979
+
+ITER #21
+ONE_OPS 4 5398979 > 21595916
+TWO_OPS 2 5398979 344446059 > 7380330208210162
+Writing file: data/shapes.txt
+Number of values written: 1571066
+NEW 1571066
+
+ITER #22
+ONE_OPS 4 1571066 > 6284264
+TWO_OPS 2 1571066 346017125 > 2169526465268288
+Writing file: data/shapes.txt
+Number of values written: 12229
+NEW 12229
+
+ITER #23
+ONE_OPS 4 12229 > 48916
+TWO_OPS 2 12229 346029354 > 16926072783382
+Writing file: data/shapes.txt
+Number of values written: 599
+NEW 599
+
+ITER #24
+ONE_OPS 4 599 > 2396
+TWO_OPS 2 599 346029953 > 829087049786
+Writing file: data/shapes.txt
+Number of values written: 64
+NEW 64
+
+ITER #25
+ONE_OPS 4 64 > 256
+TWO_OPS 2 64 346030017 > 88583676160
+DONE
+
+Time: 11998226
+cut: 346030017, swap: 259628769, stack: -2036339695, rotate: 346030017, pinPush 346030017, crystal 346030017, collapse: 692060034
+
+Found 346,030,017 shapes, which is a lot less than the 2B I was predicting.
+stack is negative, probably because it overflowed the AtomicInt used to count the metrics.
+
+Time was 3.33 hours, but my computer was asleep for 1-2 hours.  Let's say total was under 2 hours.
+Output file is 19.34 GB.  Not sure I can save it to GitHub.
+
+

@@ -13,7 +13,7 @@ import java.util.stream.IntStream;
  */
 public class Constructor {
   private static final int MAX_ITERS = 100;
-  private static final int MAX_LAYERS = 3;
+  private static final int MAX_LAYERS = 4;
 
   final String RESULTS = "data/shapes.txt";
 
@@ -85,8 +85,8 @@ public class Constructor {
         consumer.accept(Ops.stack(s1, s2));
     }));
 
-    // IntStream stream = streams.stream().flatMapToInt(s -> s).filter(this::isNew).distinct();
-    IntStream stream = streams.stream().flatMapToInt(s -> s).filter(this::maxLayers).filter(this::isNew).distinct();
+    IntStream stream = streams.stream().flatMapToInt(s -> s).filter(this::isNew).distinct();
+    // IntStream stream = streams.stream().flatMapToInt(s -> s).filter(this::maxLayers).filter(this::isNew).distinct();
     return stream.parallel().toArray();
   }
 
