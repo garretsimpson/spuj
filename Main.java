@@ -23,7 +23,7 @@ public class Main {
     Ops.Stats.clear();
     Constructor c = new Constructor();
     long before = new Date().getTime();
-    c.run1();
+    c.run();
     long after = new Date().getTime();
     System.out.printf("Time: %d\n", after - before);
     System.out.println(Ops.Stats.asString());

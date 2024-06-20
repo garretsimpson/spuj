@@ -845,11 +845,12 @@ Attempt 2:
   - two ops on each (m, n) // n*m
   - two ops on each (n, m) // n*m
 - basically every two op except each (n, n) // n^2
-- that's m^2 - n^2 + m ops.
+- that's (m+n)^2 - n^2 + m ops.
 
 Notes
 - I'm inventing both rounds and batches.  Can probably be the same thing.
-- (n+m)^2 = n^2 +2nm + m^2
+- (n+m)^2 = n^2 + 2nm + m^2
+- 2nm + m^2 = m(2n+m)
 - Could probably do the same thing in memory.
 - Why is this not what the code is currently doing?
 - The code is currently doing ...?
@@ -893,11 +894,12 @@ Example:
 Notes
 - This will find solutions to all shapes, and the cost will be 0 for primitives or 1 for every other shape.
 - This is because the build found is (in most cases) not from the primitives.
-- Proably need to start with the primitives and build up from there.
+- Not very useful to just find the first operation, would probably find many cycles in the build graph.
+- Need a tree with primitives as the leaf nodes.
+- Probably need to start with the primitives and build up from there.
 
+YEAH! Ran 4-layers to completion...
 
-YEAH! Ran 4-layers to completion
-...
 ITER #15
 ONE_OPS 4 50822726 > 203290904
 TWO_OPS 2 50822726 119938943 > 19216597191132320
@@ -982,4 +984,10 @@ stack is negative, probably because it overflowed the AtomicInt used to count th
 Time was 3.33 hours, but my computer was asleep for 1-2 hours.  Let's say total was under 2 hours.
 Output file is 19.34 GB.  Not sure I can save it to GitHub.
 
-
+TODO
+- keep a global newShapes Set/list.
+- add to the newShapes directly.
+- take up to a max number shapes from newShapes.  probably 10M
+- more iters, less memory
+- need a method to take up to a given number of values out of a Set, into an array?
+- change two ops streams to simplify/reduce number of arrays needed.

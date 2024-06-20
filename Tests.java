@@ -42,10 +42,11 @@ public class Tests {
   }
 
   static void run() {
-    loadShapes();
-    shapeStats();
+    code2();
+    // loadShapes();
+    // shapeStats();
     // findImpossibleShapes();
-    filterPossibleShapes();
+    // filterPossibleShapes();
     // filterImpossibleShapes();
   }
 
@@ -365,6 +366,27 @@ public class Tests {
     System.out.printf("Read file: %s\n", name);
     Set<Integer> shapeSet = ShapeFile.read(name);
     Tools.displayShapes(shapeSet);
+  }
+
+  static void code2() {
+    final int MAX_NUM = 10;
+    Set<Integer> srcSet = new HashSet<>();
+    Set<Integer> dstSet = new HashSet<>();
+
+    // Init source
+    IntStream.rangeClosed(1, 100).forEach(v -> srcSet.add(v));
+    // Take values
+    int n = MAX_NUM;
+    for (int v : srcSet) {
+      if (n-- == 0)
+        break;
+      dstSet.add(v);
+    }
+    srcSet.removeAll(dstSet);
+    int[] result = dstSet.stream().mapToInt(Integer::intValue).toArray();
+
+    System.out.printf("src: %d, dst: %d\n", srcSet.size(), dstSet.size());
+    System.out.printf("Source:\n%s\n", Arrays.toString(result));
   }
 
 }
