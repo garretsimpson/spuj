@@ -38,6 +38,8 @@ enum OpTests {
 
   CRYSTAL_01(Ops::crystal, 0x0001, 0x000e000f) {},
   CRYSTAL_02(Ops::crystal, 0x00010010, 0x00ef00ff) {},
+  CRYSTAL_03(Ops::crystal1, 0x0001, 0x0000) {},
+  CRYSTAL_04(Ops::crystal1, 0x0000000e, 0x0001000f) {},
 
   SWAP_01(Ops::swapLeft, 0x000f, 0x000f, 0x000f) {},
   SWAP_02(Ops::swapRight, 0x000f, 0x000f, 0x000f) {},

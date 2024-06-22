@@ -1,6 +1,6 @@
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Ops
@@ -10,7 +10,7 @@ class Ops {
   enum Stats {
     CUT, SWAP, STACK, ROTATE, PINPUSH, CRYSTAL, COLLAPSE;
 
-    AtomicInteger value = new AtomicInteger();
+    AtomicLong value = new AtomicLong();
 
     static void clear() {
       for (Stats t : Stats.values())
@@ -338,18 +338,33 @@ class Ops {
 
   static int crystal(int shape) {
     Stats.CRYSTAL.increment();
-    int result = shape;
-    int[] layers = Shape.toLayers(shape);
-    // pins and voids become crystals
-    int val;
-    for (int layerNum = 0; layerNum < layers.length; ++layerNum) {
-      val = layers[layerNum];
-      if (val == 0)
-        break;
-      val = 0x0f - (val & 0x0f);
-      result |= (val << (4 * layerNum)) * Shape.CRYSTAL_MASK;
+    int numLayers = Shape.layerCount(shape);
+    // pins and gaps become crystals
+    int mask = 0xf, gaps;
+    for (int i = 0; i < numLayers; ++i) {
+      gaps = ~shape & mask;
+      shape |= gaps * Shape.CRYSTAL_MASK;
+      mask <<= 4;
     }
-    return result;
+    return shape;
+  }
+
+  /* Make at most one crystal quarter */
+  static int crystal1(int shape) {
+    // make sure that the shape has only one gap.
+    int mask = 0x1;
+    int gaps = 0;
+    int numQuads = Shape.layerCount(shape) * Shape.NUM_QUADS;
+    // pins and gaps become crystals
+    for (int i = 0; i < numQuads; ++i) {
+      if ((shape & mask) == 0)
+        ++gaps;
+      mask <<= 1;
+    }
+    if (gaps == 1)
+      return crystal(shape);
+    else
+      return 0;
   }
 
   static int swapLeft(int left, int right) {

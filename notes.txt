@@ -867,7 +867,7 @@ Solution finder
 - Each shape only needs to store the one operation that was used to build it.
 - The solution database could be a fixed length binary file:
   - 2^32 records, index / position would be the shape value
-  - each record would have 5 bytes: op code, shape1, shape2 (optional)
+  - each record would have 9 bytes: op code, shape1, shape2 (optional)
 - Method 1: (op priorty)
   - Operations would have a preference, try them in order and record the first one found.
   - Ideally all shapes would be in memory, but would only need store one copy of them.
@@ -991,3 +991,63 @@ TODO
 - more iters, less memory
 - need a method to take up to a given number of values out of a Set, into an array?
 - change two ops streams to simplify/reduce number of arrays needed.
+
+3-layer, 1 crystal
+
+Time: 16895
+cut: 4861040, swap: 3936256, stack: 388883200, rotate: 4861040, pinPush 4861040, crystal 4861040, collapse: 9722080
+
+Is that more shapes?  was 3,865,587, now 4,861,040
+
+Currently crystal1 makes just one crystal, even if the shape has more gaps.  But that's not how crystal maker works.
+Need to have a shape with just one gap, or maybe just use a primitive that has only one crystal.
+
+Fixed crystal1() to only make a crystal only if there is exactly one gap.
+
+Time: 13563
+cut: 3865587, swap: 3222025, stack: 309246960, rotate: 3865587, pinPush 3865587, crystal 40768, collapse: 7731174
+
+Shape/solution database files
+- a fixed length binary file with 2^32 9-byte entries would be ~ 40 GB
+- It would need one 1-byte value and two 32-bit values = 9 bytes per entry.
+- a text file with 1 entry per shape would be about 350M * 29 ~ 10 GB
+- It would need one 1-char entry, two or three 8-char entries, and 4 1-char spearators = 20 or 29 chars per entry
+- Maybe use 4 fields: cost, op, shape1, [shape2]
+- The advantage of fixed length is that it could be memory mapped.  But 40GB is a lot of contiguous memory.
+- The text file is actually smaller, but would need to be parsed.
+- Maybe a seriallized object could be an option?
+
+- Do I use a random access file, and write 9 bytes at a time?
+- Or do I use write an entire 2^32 size Array to disk?
+- I'm not even sure I can make a 2^32 size Array and be able to access all the entries.
+- array index is a signed int, so 2^31-1, but might be smaller depending on JVM.
+- Looks like ByteBuffer also uses an int index.
+- So does an ArrayList
+
+TODO
+- Soltion finder
+- Make a new class for this
+- Probably just use the same algo as before
+  - Which does not use the known list of parts
+  - has a tiered todo list by cost
+  - ...
+- Start with primitives, which can have any cost, but zero is fine.
+  - probably use 1, so that two ops cost more than one ops.
+- Each op costs 1, maybe crystal costs 2.
+- Put the primitives in the found and todo lists.
+- take a batch out of the todo list
+- perform all ops on them, in priority order
+- two ops use shapes in batch (todo) and found lists, but not repeat them
+- for each shape found:
+  - compute cost: sum cost of used shapes plus cost of op
+  - if it is new, store how to make it, and cost.
+  - if it is old and costs less, replace the existing solution: how to make it, and cost.
+  - if it is old and costs the same or more, then skip it.
+  - store new shapes found in the todo list.
+- can skip remaining ops when a lower cost shape found (optimization)
+  - this bit is sequential.  Might need to do saving of shapes as separate pipeline?
+- store the results (incrementally ideally) in a database format
+- analyze the results
+  - for a given shape, output how to build it.
+  - probably recursive function.
+- updating and hosting the solution viewer would be awesome.

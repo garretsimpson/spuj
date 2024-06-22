@@ -13,9 +13,9 @@ import java.util.stream.IntStream;
  * Constructor
  */
 public class Constructor {
-  private static final int MAX_ITERS = 10000;
+  private static final int MAX_ITERS = 100;
   private static final int MAX_LAYERS = 3;
-  private static final int BATCH_SIZE = 100000;
+  private static final int BATCH_SIZE = 10000000;
 
   final String RESULTS = "data/shapes.txt";
 
@@ -36,9 +36,8 @@ public class Constructor {
     return allShapeStream().filter(s -> !newShapes.contains(s));
   }
 
-  Set<Integer> getValues(Set<Integer> srcSet, int maxValues) {
+  Set<Integer> takeValues(Set<Integer> srcSet, int maxValues) {
     Set<Integer> dstSet = new HashSet<>();
-    // Take values
     for (int v : srcSet) {
       if (maxValues-- == 0)
         break;
@@ -65,6 +64,7 @@ public class Constructor {
   void run() {
     // int[] shapes = IntStream.of(Shape.FLAT_4).toArray();
     int[] shapes = Arrays.asList(Shape.FLAT_4, Shape.PIN_4).stream().flatMapToInt(v -> IntStream.of(v)).toArray();
+    // int[] shapes = Arrays.stream(new int[][] { Shape.FLAT_4, Shape.PIN_4 }).flatMapToInt(Arrays::stream).toArray();
 
     System.out.println("Max iters: " + MAX_ITERS);
     System.out.println("Max layers: " + MAX_LAYERS);
@@ -80,17 +80,17 @@ public class Constructor {
 
     for (int i = 1; i <= MAX_ITERS; ++i) {
       System.out.printf("ITER #%d\n", i);
-      inputShapes = getValues(newShapes, BATCH_SIZE);
+      inputShapes = takeValues(newShapes, BATCH_SIZE);
       /* TODO: add inputShapes to allShapes before calling makeShapes */
       makeShapes(inputShapes);
       allShapes.addAll(inputShapes);
 
       // ShapeFile.append(RESULTS, newShapes);
-      if (newShapes.size() == 0) {
+      if (newShapes.size() > 0) {
+        System.out.printf("TODO %d\n\n", newShapes.size());
+      } else {
         System.out.printf("DONE\n\n");
         break;
-      } else {
-        System.out.printf("TODO %d\n\n", newShapes.size());
       }
 
       // System.out.println("Output shapes");

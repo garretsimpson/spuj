@@ -1,3 +1,7 @@
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
@@ -42,7 +46,7 @@ public class Tests {
   }
 
   static void run() {
-    code2();
+    file1();
     // loadShapes();
     // shapeStats();
     // findImpossibleShapes();
@@ -387,6 +391,20 @@ public class Tests {
 
     System.out.printf("src: %d, dst: %d\n", srcSet.size(), dstSet.size());
     System.out.printf("Source:\n%s\n", Arrays.toString(result));
+  }
+
+  static void file1() {
+    final String TESTFILE = "data/test.bin";
+
+    int size = 1 << 32;
+    byte[] ba = new byte[size];
+
+    try {
+      Files.createFile(Path.of(TESTFILE));
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
   }
 
 }

@@ -2,6 +2,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Scanner;
@@ -85,7 +86,7 @@ public class ShapeFile {
 
   static void delete(String name) {
     try {
-      Files.delete(Paths.get(name));
+      Files.delete(Path.of(name));
     } catch (Exception e) {
       System.err.printf("Error deleting file: %s\n", name);
       System.err.println(e);
