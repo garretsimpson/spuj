@@ -14,21 +14,23 @@ public class Main {
 
     // ShapeTests.run();
     // OpTests.run();
-    Tests.run();
+    // Tests.run();
 
-    // makeShapes();
+    makeShapes();
+    ShapeFile.sort("BigData/shapes.db");
   }
 
   static void makeShapes() {
     Ops.Stats.clear();
-    Constructor c = new Constructor();
+    // Constructor f = new Constructor();
+    Solver f = new Solver();
     long before = new Date().getTime();
-    c.run();
+    f.run();
     long after = new Date().getTime();
     System.out.printf("Time: %d\n", after - before);
     System.out.println(Ops.Stats.asString());
 
-    // c.saveResults();
+    // s.saveResults();
   }
 
 }

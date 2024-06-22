@@ -46,7 +46,6 @@ public class Tests {
   }
 
   static void run() {
-    file1();
     // loadShapes();
     // shapeStats();
     // findImpossibleShapes();

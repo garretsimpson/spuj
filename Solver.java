@@ -10,14 +10,14 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * Constructor
+ * Solver
  */
-public class Constructor {
-  private static final int MAX_ITERS = 100;
-  private static final int MAX_LAYERS = 3;
-  private static final int BATCH_SIZE = 10000000;
+public class Solver {
+  private static final int MAX_ITERS = 1000;
+  private static final int MAX_LAYERS = 2;
+  private static final int BATCH_SIZE = 100000;
 
-  final String RESULTS = "BigData/shapes.txt";
+  final String RESULTS = "BigData/shapes.db";
 
   private static final IntUnaryOperator[] ONE_OPS_ALL = { Ops::rotateRight, Ops::rotate180, Ops::rotateLeft,
       Ops::cutLeft, Ops::cutRight, Ops::pinPush, Ops::crystal };
@@ -75,8 +75,8 @@ public class Constructor {
     Set<Integer> inputShapes = IntStream.of(shapes).boxed().collect(Collectors.toSet());
     newShapes.addAll(inputShapes);
 
-    // ShapeFile.delete(RESULTS);
-    // ShapeFile.append(RESULTS, newShapes);
+    ShapeFile.delete(RESULTS);
+    ShapeFile.append(RESULTS, newShapes);
 
     for (int i = 1; i <= MAX_ITERS; ++i) {
       System.out.printf("ITER #%d\n", i);
@@ -84,8 +84,8 @@ public class Constructor {
       /* TODO: add inputShapes to allShapes before calling makeShapes */
       makeShapes(inputShapes);
       allShapes.addAll(inputShapes);
+      ShapeFile.append(RESULTS, newShapes);
 
-      // ShapeFile.append(RESULTS, newShapes);
       if (newShapes.size() > 0) {
         System.out.printf("TODO %d\n\n", newShapes.size());
       } else {
