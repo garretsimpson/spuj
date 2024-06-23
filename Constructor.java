@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntUnaryOperator;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -62,9 +61,8 @@ public class Constructor {
   }
 
   void run() {
-    // int[] shapes = IntStream.of(Shape.FLAT_4).toArray();
-    int[] shapes = Arrays.asList(Shape.FLAT_4, Shape.PIN_4).stream().flatMapToInt(v -> IntStream.of(v)).toArray();
-    // int[] shapes = Arrays.stream(new int[][] { Shape.FLAT_4, Shape.PIN_4 }).flatMapToInt(Arrays::stream).toArray();
+    // int[] shapes = Arrays.stream(Shape.FLAT_4).toArray();
+    int[] shapes = Arrays.stream(new int[][] { Shape.FLAT_4, Shape.PIN_4 }).flatMapToInt(Arrays::stream).toArray();
 
     System.out.println("Max iters: " + MAX_ITERS);
     System.out.println("Max layers: " + MAX_LAYERS);
@@ -72,29 +70,24 @@ public class Constructor {
     System.out.println("Input shapes");
     Tools.displayShapes(shapes);
 
-    Set<Integer> inputShapes = IntStream.of(shapes).boxed().collect(Collectors.toSet());
-    newShapes.addAll(inputShapes);
+    IntStream.of(shapes).forEach(newShapes::add);
+    ShapeFile.delete(RESULTS);
 
-    // ShapeFile.delete(RESULTS);
-    // ShapeFile.append(RESULTS, newShapes);
-
+    Set<Integer> inputShapes;
     for (int i = 1; i <= MAX_ITERS; ++i) {
       System.out.printf("ITER #%d\n", i);
       inputShapes = takeValues(newShapes, BATCH_SIZE);
       /* TODO: add inputShapes to allShapes before calling makeShapes */
       makeShapes(inputShapes);
       allShapes.addAll(inputShapes);
+      ShapeFile.append(RESULTS, inputShapes);
 
-      // ShapeFile.append(RESULTS, newShapes);
       if (newShapes.size() > 0) {
         System.out.printf("TODO %d\n\n", newShapes.size());
       } else {
         System.out.printf("DONE\n\n");
         break;
       }
-
-      // System.out.println("Output shapes");
-      // displayShapes(newShapes);
     }
   }
 

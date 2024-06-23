@@ -1067,7 +1067,7 @@ Running two ops
 - How do I create a stream of (x,y) pairs?
 - Solved by using Stream.mapMulti()
 
-Ran 3-layers the first time...
+Ran 2-layers the first time...
 
 Time: 121131
 cut: 2489392080, swap: 1244678400, stack: 1244678400, rotate: 35280, pinPush 35280, crystal 35280, collapse: 2489427360
@@ -1094,4 +1094,23 @@ cut: 35280, swap: 32400, stack: 2822400, rotate: 35280, pinPush 35280, crystal 3
 - Might be worth it to make this faster.
 - If top parts were filtered before stack, then the solutions would never put crystals on top.
 - That might be worth it too.  The solutions might be longer, but they would not waste crystals.
+
+TODO:
+- Does Map.stream() have the keys?  Map does not implement stream().
+
+Modified Solver to use only maps.
+
+Time: 117508
+cut: 2489392080, swap: 1244678400, stack: 1244678400, rotate: 35280, pinPush 35280, crystal 35280, collapse: 2489427360
+
+Maybe a little faster, but not significant.  Hopefully uses less memory.
+
+It's finding solutions, but not very good ones...
+00000001,SR,00cf00ff,0006000f
+
+TODO
+- Solution finder: display build instructions for a given target shape.
+- Try optimizing the solver.
+- Implement min cost solver.
+- Upgrade and host solution finder.
 

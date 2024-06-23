@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -29,27 +30,44 @@ class Ops {
   }
 
   enum Name {
-    NOP(0) {},
-    ROTATE_RIGHT(0x01) {},
-    ROTATE_180(0x02) {},
-    ROTATE_LEFT(0x03) {},
-    CUT_RIGHT(0x04) {},
-    CUT_LEFT(0x05) {},
-    PINPUSH(0x06) {},
-    CRYSTAL(0x07) {},
-    SWAP_RIGHT(0x10) {},
-    SWAP_LEFT(0x11) {},
-    STACK(0x12) {};
+    NOP(0, "PR") {},
+    ROTATE_RIGHT(0x01, "RR") {},
+    ROTATE_180(0x02, "RU") {},
+    ROTATE_LEFT(0x03, "RL") {},
+    CUT_RIGHT(0x04, "CR") {},
+    CUT_LEFT(0x05, "RL") {},
+    PINPUSH(0x06, "PP") {},
+    CRYSTAL(0x07, "XX") {},
+    SWAP_RIGHT(0x10, "SR") {},
+    SWAP_LEFT(0x11, "SL") {},
+    STACK(0x12, "ST") {};
 
     byte value;
+    String code;
 
-    Name(int value) {
+    Name(int value, String code) {
       this.value = (byte) value;
+      this.code = code;
+      nameCodes.put(value, code);
+      nameValues.put(code, value);
     }
+  }
+
+  static HashMap<Integer, String> nameCodes = new HashMap<>();
+  static HashMap<String, Integer> nameValues = new HashMap<>();
+
+  static String getCode(byte value) {
+    return nameCodes.get((int) value);
+  }
+
+  static byte getValue(String code) {
+    return (byte) nameValues.get(code).intValue();
   }
 
   static int invoke(Name opName, int shape) {
     switch (opName) {
+    case NOP:
+      return nop(shape);
     case ROTATE_RIGHT:
       return rotateRight(shape);
     case ROTATE_180:

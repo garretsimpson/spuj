@@ -3,8 +3,9 @@ import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -20,6 +21,14 @@ public class ShapeFile {
 
   static void write(String name, Set<Integer> data) {
     write(name, data.stream().mapToInt(Integer::intValue), false);
+  }
+
+  static void writeDB(String name, Map<Integer, Solver.Build> data) {
+    writeDB(name, data, false);
+  }
+
+  static void appendDB(String name, Map<Integer, Solver.Build> data) {
+    writeDB(name, data, true);
   }
 
   static void append(String name, int[] data) {
@@ -49,29 +58,48 @@ public class ShapeFile {
     }
   }
 
-  static Set<Integer> read(String name) {
+  static void writeDB(String name, Map<Integer, Solver.Build> data, boolean append) {
+    System.out.printf("Writing file: %s\n", name);
+    try (FileWriter file = new FileWriter(name, append)) {
+      PrintWriter out = new PrintWriter(file);
+      // data.forEach((shape, build) -> out.printf("%08x,%s,%08x,%08x\n", shape, Ops.getCode(build.op), build.shape1,
+      // build.shape2));
+      data.keySet().stream().sorted().forEach(shape -> {
+        Solver.Build build = data.get(shape);
+        out.printf("%08x,%s,%08x,%08x\n", shape, Ops.getCode(build.op), build.shape1, build.shape2);
+      });
+    } catch (Exception e) {
+      System.err.printf("Error writing file: %s\n", name);
+    }
+  }
+
+  static Map<Integer, Solver.Build> readDB(String name) {
     System.out.printf("Reading file: %s\n", name);
-    Set<Integer> dataSet = new HashSet<>();
-    Integer value;
+    Map<Integer, Solver.Build> dataMap = new HashMap<>();
+    Integer shape, shape1, shape2;
+    String opCode;
     try (Scanner scan = new Scanner(new FileReader(name))) {
       scan.useRadix(16);
       scan.useDelimiter("[\\s+,]");
       while (scan.hasNext()) {
-        value = scan.nextInt();
-        dataSet.add(value);
+        shape = scan.nextInt();
+        opCode = scan.next();
+        shape1 = scan.nextInt();
+        shape2 = scan.nextInt();
+        dataMap.put(shape, new Solver.Build(Ops.getValue(opCode), shape1, shape2));
       }
     } catch (Exception e) {
       System.err.printf("Error reading file: %s\n", name);
       System.err.println(e);
     }
-    System.out.printf("Number of values read: %d\n", dataSet.size());
-    return dataSet;
+    System.out.printf("Number of values read: %d\n", dataMap.size());
+    return dataMap;
   }
 
   static void sort(String name) {
     System.out.printf("Sorting file: %s\n", name);
-    Set<Integer> dataSet = read(name);
-    write(name, dataSet.stream().mapToInt(Integer::intValue).sorted(), false);
+    Map<Integer, Solver.Build> dataMap = readDB(name);
+    writeDB(name, dataMap, false);
   }
 
   static void write_old(String name, Set<Integer> data, boolean append) {
