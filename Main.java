@@ -22,8 +22,8 @@ public class Main {
 
   static void makeShapes() {
     Ops.Stats.clear();
-    // Constructor f = new Constructor();
-    Solver f = new Solver();
+    Constructor f = new Constructor();
+    // Solver f = new Solver();
     long before = new Date().getTime();
     f.run();
     long after = new Date().getTime();

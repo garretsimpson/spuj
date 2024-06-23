@@ -14,7 +14,7 @@ import java.util.stream.IntStream;
  */
 public class Constructor {
   private static final int MAX_ITERS = 100;
-  private static final int MAX_LAYERS = 3;
+  private static final int MAX_LAYERS = 2;
   private static final int BATCH_SIZE = 10000000;
 
   final String RESULTS = "BigData/shapes.txt";

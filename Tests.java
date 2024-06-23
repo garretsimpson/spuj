@@ -395,13 +395,9 @@ public class Tests {
   static void file1() {
     final String TESTFILE = "data/test.bin";
 
-    int size = 1 << 32;
-    byte[] ba = new byte[size];
-
     try {
       Files.createFile(Path.of(TESTFILE));
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
   }

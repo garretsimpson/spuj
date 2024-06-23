@@ -28,6 +28,62 @@ class Ops {
     }
   }
 
+  enum Name {
+    NOP(0) {},
+    ROTATE_RIGHT(0x01) {},
+    ROTATE_180(0x02) {},
+    ROTATE_LEFT(0x03) {},
+    CUT_RIGHT(0x04) {},
+    CUT_LEFT(0x05) {},
+    PINPUSH(0x06) {},
+    CRYSTAL(0x07) {},
+    SWAP_RIGHT(0x10) {},
+    SWAP_LEFT(0x11) {},
+    STACK(0x12) {};
+
+    byte value;
+
+    Name(int value) {
+      this.value = (byte) value;
+    }
+  }
+
+  static int invoke(Name opName, int shape) {
+    switch (opName) {
+    case ROTATE_RIGHT:
+      return rotateRight(shape);
+    case ROTATE_180:
+      return rotate180(shape);
+    case ROTATE_LEFT:
+      return rotateLeft(shape);
+    case CUT_RIGHT:
+      return cutRight(shape);
+    case CUT_LEFT:
+      return cutLeft(shape);
+    case PINPUSH:
+      return pinPush(shape);
+    case CRYSTAL:
+      return crystal(shape);
+    default:
+      System.err.println("Unkown op name: " + opName.name());
+      return 0;
+    }
+  }
+
+  static int invoke(Name opName, int shape1, int shape2) {
+    switch (opName) {
+    case SWAP_RIGHT:
+      return swapRight(shape1, shape2);
+    case SWAP_LEFT:
+      return swapLeft(shape1, shape2);
+    case STACK:
+      return stack(shape1, shape2);
+    default:
+      System.err.println("Unkown op name: " + opName.name());
+      return 0;
+    }
+  }
+
   /**
    * Unsigned min()
    * 
@@ -69,6 +125,16 @@ class Ops {
       shape >>>= 1;
     }
     return result;
+  }
+
+  /**
+   * Identity operation
+   * 
+   * @param shape
+   * @return
+   */
+  static int nop(int shape) {
+    return shape;
   }
 
   /**

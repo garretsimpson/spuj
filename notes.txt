@@ -1025,9 +1025,18 @@ Shape/solution database files
 - So does an ArrayList
 
 TODO
-- Soltion finder
-- Make a new class for this
-- Probably just use the same algo as before
+- Solution finder
+- Make a new class for this.
+- Finding any solution is simpler that finding a minimum cost solution.
+- Any solution:
+  - Perform all ops (like the constructor) (in priority order?)
+    - priorty order means sequential performance.  How to do this in parallel?
+    - maybe each op has a priory number, and lower numbers overwrite higher ones?
+    - this is like cost, might do that later.
+  - Find the build (op and inputs used) for each shape found (instead of just the new shape value).
+  - Store the build if the shape is new (does not already have a build)
+  - Or, just store all of them, they just get replaced.  Don't like this option.
+- Min cost: Probably just use the same algo as before...
   - Which does not use the known list of parts
   - has a tiered todo list by cost
   - ...
@@ -1036,7 +1045,7 @@ TODO
 - Each op costs 1, maybe crystal costs 2.
 - Put the primitives in the found and todo lists.
 - take a batch out of the todo list
-- perform all ops on them, in priority order
+- perform all ops on them (in priority order?)
 - two ops use shapes in batch (todo) and found lists, but not repeat them
 - for each shape found:
   - compute cost: sum cost of used shapes plus cost of op
@@ -1046,8 +1055,43 @@ TODO
   - store new shapes found in the todo list.
 - can skip remaining ops when a lower cost shape found (optimization)
   - this bit is sequential.  Might need to do saving of shapes as separate pipeline?
+  - This may be incorrect.  What if a later op finds a lower cost?
 - store the results (incrementally ideally) in a database format
 - analyze the results
   - for a given shape, output how to build it.
   - probably recursive function.
 - updating and hosting the solution viewer would be awesome.
+
+Running two ops
+- Need a stream of Solutions for each (x,y)
+- How do I create a stream of (x,y) pairs?
+- Solved by using Stream.mapMulti()
+
+Ran 3-layers the first time...
+
+Time: 121131
+cut: 2489392080, swap: 1244678400, stack: 1244678400, rotate: 35280, pinPush 35280, crystal 35280, collapse: 2489427360
+
+Sorting file: BigData/shapes.db
+Reading file: BigData/shapes.db
+Number of values read: 35280
+Writing file: BigData/shapes.db
+
+The number of results is correct...
+- rotate, pinPush, crystal are num
+- swap and stack are num^2
+- cut is 2*num^2 + num because 2 for each swap plus cutRight
+
+It took 121 seconds instead of 270 msec
+
+Sample of constructor 2-layers...
+Time: 271
+cut: 35280, swap: 32400, stack: 2822400, rotate: 35280, pinPush 35280, crystal 35280, collapse: 70560
+
+- I could use fastSwap by filtering the inputs.
+- The solutions would have cut before both inputs before using swap.
+- When I implement cost based, the cost would be +2 in most cases.
+- Might be worth it to make this faster.
+- If top parts were filtered before stack, then the solutions would never put crystals on top.
+- That might be worth it too.  The solutions might be longer, but they would not waste crystals.
+
