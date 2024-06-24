@@ -1103,14 +1103,80 @@ Modified Solver to use only maps.
 Time: 117508
 cut: 2489392080, swap: 1244678400, stack: 1244678400, rotate: 35280, pinPush 35280, crystal 35280, collapse: 2489427360
 
-Maybe a little faster, but not significant.  Hopefully uses less memory.
+Maybe a little faster, but not significantly.  Hopefully uses less memory.
 
 It's finding solutions, but not very good ones...
 00000001,SR,00cf00ff,0006000f
+  00cf00ff,XX,00cf0030,00000000
+    00cf0030,SR,00ff0000,000f00f0
+      00ff0000,PP,000f0000,00000000
+        000f0000,PR,000f0000,00000000
+      000f00f0,PP,0000000f,00000000
+        0000000f,PR,0000000f,00000000
+  0006000f,XX,00060009,00000000
+    00060009,RR,0003000c,00000000
+      0003000c,SR,0000000f,000f0000
+        0000000f,PR,0000000f,00000000
+        000f0000,PR,000f0000,00000000
 
 TODO
+- Implement asString() and parse() for Build class.
+  - maybe not, since that would make the Build class bigger.
 - Solution finder: display build instructions for a given target shape.
 - Try optimizing the solver.
+  - Smaller Build and Solution classes
+  - Can Build and Solution be combined?
+  - Split makeShapes into two or more parts (one ops, two ops, etc.)  Add to newBuilds after each set of ops.
+- Implement separate class for Solution list/set.
 - Implement min cost solver.
 - Upgrade and host solution finder.
+
+Last found...
+File shapes2_1.db
+
+00000001 <- SR(00cf00ff, 0006000f)
+  00cf00ff <- XX(00cf0030)
+    00cf0030 <- SR(00ff0000, 000f00f0)
+      00ff0000 <- PP(000f0000)
+        000f0000 <--
+      000f00f0 <- PP(0000000f)
+        0000000f <--
+  0006000f <- XX(00060009)
+    00060009 <- RR(0003000c)
+      0003000c <- SR(0000000f, 000f0000)
+        0000000f <--
+        000f0000 <--
+
+First found...
+File shapes2_2.db
+
+Find solution for: 00000001
+00000001 <- SR(00cf00ff, 0006000f)
+  00cf00ff <- XX(00cf0030)
+    00cf0030 <- SR(00ff0000, 000f00f0)
+      00ff0000 <- PP(000f0000)
+        000f0000 <--
+      000f00f0 <- PP(0000000f)
+        0000000f <--
+  0006000f <- XX(00060009)
+    00060009 <- RR(0003000c)
+      0003000c <- SR(0000000f, 000f0000)
+        0000000f <--
+        000f0000 <--
+
+It's the same solution.
+
+Added all types of one ops, and ran them before two_ops...
+File shapes2_3.db
+
+00000001 <- CR(00000009)
+  00000009 <- RL(00000003)
+    00000003 <- CR(0000000f)
+      0000000f <--
+
+Just full flats...
+File shapes2_4.db
+
+
+
 

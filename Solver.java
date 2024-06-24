@@ -22,8 +22,8 @@ public class Solver {
   private static final IntUnaryOperator[] ONE_OPS_ALL = { Ops::rotateRight, Ops::rotate180, Ops::rotateLeft,
       Ops::cutLeft, Ops::cutRight, Ops::pinPush, Ops::crystal };
   private static final IntBinaryOperator[] TWO_OPS_ALL = { Ops::swapLeft, Ops::swapRight, Ops::stack };
-  private static final Ops.Name[] ONE_OPS = { Ops.Name.ROTATE_RIGHT, Ops.Name.CUT_RIGHT, Ops.Name.PINPUSH,
-      Ops.Name.CRYSTAL };
+  private static final Ops.Name[] ONE_OPS = { Ops.Name.ROTATE_RIGHT, Ops.Name.ROTATE_180, Ops.Name.ROTATE_LEFT,
+      Ops.Name.CUT_RIGHT, Ops.Name.CUT_LEFT, Ops.Name.PINPUSH, Ops.Name.CRYSTAL };
   private static final Ops.Name[] TWO_OPS = { Ops.Name.SWAP_RIGHT, Ops.Name.STACK };
 
   static class Build {
@@ -108,8 +108,8 @@ public class Solver {
   }
 
   void run() {
-    // int[] shapes = Arrays.stream(Shape.FLAT_4).toArray();
-    int[] shapes = Arrays.stream(new int[][] { Shape.FLAT_4, Shape.PIN_4 }).flatMapToInt(Arrays::stream).toArray();
+    int[] shapes = Arrays.stream(Shape.FLAT_4).toArray();
+    // int[] shapes = Arrays.stream(new int[][] { Shape.FLAT_4, Shape.PIN_4 }).flatMapToInt(Arrays::stream).toArray();
 
     System.out.println("Max iters: " + MAX_ITERS);
     System.out.println("Max layers: " + MAX_LAYERS);
@@ -146,6 +146,7 @@ public class Solver {
    */
   void makeShapes(Map<Integer, Build> inputBuilds) {
     List<Stream<Solution>> streams = new ArrayList<>();
+    Stream<Solution> stream;
     int[] input = inputBuilds.keySet().stream().mapToInt(Integer::intValue).toArray();
     int inputLen = input.length;
 
@@ -153,6 +154,14 @@ public class Solver {
     for (Ops.Name opName : ONE_OPS) {
       streams.add(IntStream.of(input).boxed().map(shape -> doOp(opName, shape)));
     }
+    stream = streams.parallelStream().flatMap(s -> s);
+    stream = stream.filter(s -> this.maxLayers(s.shape));
+    stream = stream.filter(s -> !allBuilds.containsKey(s.shape));
+    stream = stream.filter(s -> !inputBuilds.containsKey(s.shape));
+    stream = stream.filter(s -> !newBuilds.containsKey(s.shape));
+    stream.forEach(s -> newBuilds.put(s.shape, s.build));
+
+    streams.clear();
 
     System.out.printf("TWO_OPS %d %d %d > %d\n", TWO_OPS.length, inputLen, allBuilds.size(),
         1l * TWO_OPS.length * ((1l * inputLen * inputLen) + (2l * inputLen * allBuilds.size())));
@@ -170,11 +179,11 @@ public class Solver {
           consumer.accept(doOp(opName, s1, s2));
       }));
     }
-
-    Stream<Solution> stream = streams.parallelStream().flatMap(s -> s);
+    stream = streams.parallelStream().flatMap(s -> s);
     stream = stream.filter(s -> this.maxLayers(s.shape));
     stream = stream.filter(s -> !allBuilds.containsKey(s.shape));
     stream = stream.filter(s -> !inputBuilds.containsKey(s.shape));
+    stream = stream.filter(s -> !newBuilds.containsKey(s.shape));
     stream.forEach(s -> newBuilds.put(s.shape, s.build));
   }
 

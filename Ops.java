@@ -30,12 +30,12 @@ class Ops {
   }
 
   enum Name {
-    NOP(0, "PR") {},
+    NOP(0, "--") {},
     ROTATE_RIGHT(0x01, "RR") {},
     ROTATE_180(0x02, "RU") {},
     ROTATE_LEFT(0x03, "RL") {},
     CUT_RIGHT(0x04, "CR") {},
-    CUT_LEFT(0x05, "RL") {},
+    CUT_LEFT(0x05, "CL") {},
     PINPUSH(0x06, "PP") {},
     CRYSTAL(0x07, "XX") {},
     SWAP_RIGHT(0x10, "SR") {},

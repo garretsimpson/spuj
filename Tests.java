@@ -1,11 +1,12 @@
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.IntBinaryOperator;
@@ -28,13 +29,18 @@ public class Tests {
   static final String IMP_SHAPES_FILENAME_2 = "data/impShapes2.txt";
   static final String IMP_SHAPES_FILENAME_3 = "data/impShapes3.txt";
 
+  static final String SOLUTION_FILENAME_2 = "BigData/shapes2.db";
+
   static final int[] FLOAT_MASKS = { 0b01110010, 0b10110001, 0b11011000, 0b11100100 };
   static final int[] FLOAT_VALUE = { 0b00100000, 0b00010000, 0b10000000, 0b01000000 };
 
   private static final int MAX_LAYERS = 3;
 
+  private static final String NOP_CODE = Ops.Name.NOP.code;
+
   static Random rng = new Random();
   static Set<Integer> allShapes, impShapes;
+  static Map<Integer, Solver.Build> allBuilds = new HashMap<>();
 
   private static IntStream allShapeStream() {
     return allShapes.stream().mapToInt(Integer::intValue);
@@ -46,16 +52,22 @@ public class Tests {
   }
 
   static void run() {
+    loadSolutions();
     // loadShapes();
     // shapeStats();
     // findImpossibleShapes();
     // filterPossibleShapes();
     // filterImpossibleShapes();
+    findSolution(0x000f0000);
   }
 
   private static void loadShapes() {
     allShapes = ShapeFile.read(ALL_SHAPES_FILENAME_3);
     // impShapes = ShapeFile.read(IMP_SHAPES_FILENAME_3);
+  }
+
+  private static void loadSolutions() {
+    allBuilds = ShapeFile.readDB(SOLUTION_FILENAME_2);
   }
 
   static void shapeStats() {
@@ -400,6 +412,31 @@ public class Tests {
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  static String buildAsString(int shape, Solver.Build build) {
+    String opCode = Ops.getCode(build.op);
+    if (build.op == Ops.Name.NOP.value)
+      return String.format("%08x <--", shape);
+    else if (build.shape2 == 0)
+      return String.format("%08x <- %s(%08x)", shape, opCode, build.shape1);
+    else
+      return String.format("%08x <- %s(%08x, %08x)", shape, opCode, build.shape1, build.shape2);
+  }
+
+  static void findSolution(int shape, int indent) {
+    Solver.Build build = allBuilds.get(shape);
+    System.out.println("  ".repeat(indent) + buildAsString(shape, build));
+    if (build.op == Ops.Name.NOP.value)
+      return;
+    findSolution(build.shape1, indent + 1);
+    if (build.shape2 != 0)
+      findSolution(build.shape2, indent + 1);
+  }
+
+  static void findSolution(int shape) {
+    System.out.printf("Find solution for: %08x\n", shape);
+    findSolution(shape, 0);
   }
 
 }

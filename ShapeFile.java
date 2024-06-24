@@ -90,7 +90,8 @@ public class ShapeFile {
       }
     } catch (Exception e) {
       System.err.printf("Error reading file: %s\n", name);
-      System.err.println(e);
+      // System.err.println(e);
+      e.printStackTrace();
     }
     System.out.printf("Number of values read: %d\n", dataMap.size());
     return dataMap;
@@ -102,7 +103,7 @@ public class ShapeFile {
     writeDB(name, dataMap, false);
   }
 
-  static void write_old(String name, Set<Integer> data, boolean append) {
+  static void write(String name, Set<Integer> data, boolean append) {
     System.out.printf("Writing file: %s\n", name);
     try (FileWriter file = new FileWriter(name, append)) {
       int value;
@@ -119,7 +120,7 @@ public class ShapeFile {
     System.out.printf("Number of values written: %d\n", data.size());
   }
 
-  static Set<Integer> read_old(String name) {
+  static Set<Integer> read(String name) {
     System.out.printf("Reading file: %s\n", name);
     Set<Integer> dataSet = new HashSet<>();
     String value;
