@@ -1127,7 +1127,11 @@ TODO
   - Smaller Build and Solution classes
   - Can Build and Solution be combined?
   - Split makeShapes into two or more parts (one ops, two ops, etc.)  Add to newBuilds after each set of ops.
-- Implement separate class for Solution list/set.
+  - Prefilters for swap and stack
+    - swap would always have cut first, but that should be easy to optimize aftward.
+    - stack would always stack non-crystals, which would probably be the perfered solution.
+    - Not sure how these would affect which solutions are found, especially when using min cost solver.
+- Implement separate class for Solution list/set.  HashMap<Integer, Build> or List<Solution>?
 - Implement min cost solver.
 - Upgrade and host solution finder.
 
@@ -1177,6 +1181,44 @@ File shapes2_3.db
 Just full flats...
 File shapes2_4.db
 
+Baseline test
+Time: 144447
+cut: 2489427360, swap: 1244678400, stack: 1,244,678,400, rotate: 105840, pinPush 35280, crystal 35280, collapse: 2489462640
 
+Implemented pre-filter (no crystals) on Stack op.
+Time: 122874
+cut: 2489427360, swap: 1244678400, stack: 113,742,720, rotate: 105840, pinPush 35280, crystal 35280, collapse: 2489462640
 
+Well, a lot less stack ops, but still took just as long to run.
+
+Using FastSwap (only halves) and FastStack (no crystal tops)...
+File shapes2_5.db
+
+Time: 4174
+cut: 70560, swap: 64800, stack: 113742720, rotate: 105840, pinPush 35280, crystal 35280, collapse: 105840
+
+- total = 35,280
+- halves = 180
+- cut = 2 * total
+- swap = 2 * halves^2
+- stack = 2334 * total
+- rotate = 3 * total
+- pinPush = total
+- crystal = total
+- collapse = cut + pinPush = 3 * total
+
+Running solutions for 3-layers...
+- It is taking hours to complete.
+- CPU is less than 20%.
+- not sure parallel stream are working as they should.
+- might try adding parallelStream() in some cases.
+
+Stopped it early (4+ hours)
+TODO 1797010
+ITER #25
+ONE_OPS 7 100000 > 700000
+TWO_OPS 3 100000 1884465 > 1160679000000
+
+Did not find all the shapes yet.
+Maybe need a check - if total number of shapes reaches the known value, then copy all shapes over and quit early.
 

@@ -58,7 +58,8 @@ public class Tests {
     // findImpossibleShapes();
     // filterPossibleShapes();
     // filterImpossibleShapes();
-    findSolution(0x000f0000);
+    findSolution(0x1);
+    // findSolution(0x000f0000);
   }
 
   private static void loadShapes() {

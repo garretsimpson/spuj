@@ -4,17 +4,19 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntUnaryOperator;
-import java.util.stream.IntStream;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * Solver
  */
 public class Solver {
-  private static final int MAX_ITERS = 100;
-  private static final int MAX_LAYERS = 2;
+  private static final int MAX_ITERS = 10;
+  private static final int MAX_LAYERS = 4;
   private static final int BATCH_SIZE = 100000;
 
   final String RESULTS = "BigData/shapes.db";
@@ -24,7 +26,7 @@ public class Solver {
   private static final IntBinaryOperator[] TWO_OPS_ALL = { Ops::swapLeft, Ops::swapRight, Ops::stack };
   private static final Ops.Name[] ONE_OPS = { Ops.Name.ROTATE_RIGHT, Ops.Name.ROTATE_180, Ops.Name.ROTATE_LEFT,
       Ops.Name.CUT_RIGHT, Ops.Name.CUT_LEFT, Ops.Name.PINPUSH, Ops.Name.CRYSTAL };
-  private static final Ops.Name[] TWO_OPS = { Ops.Name.SWAP_RIGHT, Ops.Name.STACK };
+  private static final Ops.Name[] TWO_OPS = { Ops.Name.SWAP_RIGHT, Ops.Name.SWAP_LEFT, Ops.Name.STACK };
 
   static class Build {
     byte op;
@@ -63,13 +65,13 @@ public class Solver {
   private Map<Integer, Build> allBuilds = new HashMap<>();
   private Map<Integer, Build> newBuilds = Collections.synchronizedMap(new HashMap<>());
 
-  private Stream<Integer> allShapeStream() {
-    return allBuilds.keySet().stream();
+  private Stream<Integer> shapeStream(Map<Integer, Build> builds) {
+    return builds.keySet().stream();
   }
 
-  // private IntStream oldShapeStream(Set<Integer> newShapes) {
-  // return allShapeStream().filter(s -> !newShapes.contains(s));
-  // }
+  private Stream<Integer> shapeStream(Set<Integer> shapes) {
+    return shapes.stream();
+  }
 
   Map<Integer, Build> takeValues(Map<Integer, Build> srcMap, int maxValues) {
     Map<Integer, Build> dstMap = new HashMap<>();
@@ -83,18 +85,10 @@ public class Solver {
     return dstMap;
   }
 
-  // private boolean isNew(int shape) {
-  // return !allShapes.contains(shape);
-  // }
-
   private boolean maxLayers(int shape) {
     if (shape == 0)
       return false;
     return (Shape.v1(shape) | Shape.v2(shape)) < (1 << (4 * MAX_LAYERS));
-  }
-
-  private boolean oneLayerNoCrystal(int shape) {
-    return Shape.isOneLayer(shape) && !Shape.hasCrystal(shape);
   }
 
   private Solution doOp(Ops.Name opName, int shape) {
@@ -108,8 +102,8 @@ public class Solver {
   }
 
   void run() {
-    int[] shapes = Arrays.stream(Shape.FLAT_4).toArray();
-    // int[] shapes = Arrays.stream(new int[][] { Shape.FLAT_4, Shape.PIN_4 }).flatMapToInt(Arrays::stream).toArray();
+    // int[] shapes = Arrays.stream(Shape.FLAT_4).toArray();
+    int[] shapes = Arrays.stream(new int[][] { Shape.FLAT_4, Shape.PIN_4 }).flatMapToInt(Arrays::stream).toArray();
 
     System.out.println("Max iters: " + MAX_ITERS);
     System.out.println("Max layers: " + MAX_LAYERS);
@@ -137,6 +131,8 @@ public class Solver {
         break;
       }
     }
+    if (newBuilds.size() > 0)
+      ShapeFile.appendDB(RESULTS, newBuilds);
   }
 
   /**
@@ -147,44 +143,44 @@ public class Solver {
   void makeShapes(Map<Integer, Build> inputBuilds) {
     List<Stream<Solution>> streams = new ArrayList<>();
     Stream<Solution> stream;
-    int[] input = inputBuilds.keySet().stream().mapToInt(Integer::intValue).toArray();
-    int inputLen = input.length;
+    int inputLen = inputBuilds.size();
 
     System.out.printf("ONE_OPS %d %d > %d\n", ONE_OPS.length, inputLen, 1l * ONE_OPS.length * inputLen);
     for (Ops.Name opName : ONE_OPS) {
-      streams.add(IntStream.of(input).boxed().map(shape -> doOp(opName, shape)));
+      streams.add(shapeStream(inputBuilds).map(shape -> doOp(opName, shape)));
     }
-    stream = streams.parallelStream().flatMap(s -> s);
-    stream = stream.filter(s -> this.maxLayers(s.shape));
-    stream = stream.filter(s -> !allBuilds.containsKey(s.shape));
-    stream = stream.filter(s -> !inputBuilds.containsKey(s.shape));
-    stream = stream.filter(s -> !newBuilds.containsKey(s.shape));
-    stream.forEach(s -> newBuilds.put(s.shape, s.build));
-
-    streams.clear();
 
     System.out.printf("TWO_OPS %d %d %d > %d\n", TWO_OPS.length, inputLen, allBuilds.size(),
         1l * TWO_OPS.length * ((1l * inputLen * inputLen) + (2l * inputLen * allBuilds.size())));
-    for (Ops.Name opName : TWO_OPS) {
-      streams.add(allShapeStream().mapMulti((s2, consumer) -> {
-        for (int s1 : input)
-          consumer.accept(doOp(opName, s1, s2));
-      }));
-      streams.add(allShapeStream().mapMulti((s1, consumer) -> {
-        for (int s2 : input)
-          consumer.accept(doOp(opName, s1, s2));
-      }));
-      streams.add(Arrays.stream(input).boxed().mapMulti((s1, consumer) -> {
-        for (int s2 : input)
-          consumer.accept(doOp(opName, s1, s2));
-      }));
-    }
+    makeStreams(streams, inputBuilds, Ops.Name.FAST_SWAP, x -> Shape.isLeftHalf(x), x -> Shape.isRightHalf(x));
+    makeStreams(streams, inputBuilds, Ops.Name.FAST_SWAP, x -> Shape.isRightHalf(x), x -> Shape.isLeftHalf(x));
+    makeStreams(streams, inputBuilds, Ops.Name.STACK, x -> !Shape.hasCrystal(x), x -> true);
+
     stream = streams.parallelStream().flatMap(s -> s);
     stream = stream.filter(s -> this.maxLayers(s.shape));
     stream = stream.filter(s -> !allBuilds.containsKey(s.shape));
     stream = stream.filter(s -> !inputBuilds.containsKey(s.shape));
-    stream = stream.filter(s -> !newBuilds.containsKey(s.shape));
+    // stream = stream.filter(s -> !newBuilds.containsKey(s.shape));
     stream.forEach(s -> newBuilds.put(s.shape, s.build));
+  }
+
+  /* This "completes the square" by doing all operations that have not been done before. */
+  void makeStreams(List<Stream<Solution>> streams, Map<Integer, Build> inputBuilds, Ops.Name opName,
+      Predicate<Integer> pre1, Predicate<Integer> pre2) {
+    Set<Integer> set1 = shapeStream(inputBuilds).filter(pre1).collect(Collectors.toSet());
+    Set<Integer> set2 = shapeStream(inputBuilds).filter(pre2).collect(Collectors.toSet());
+    streams.add(shapeStream(allBuilds).filter(pre2).mapMulti((s2, consumer) -> {
+      for (int s1 : set1)
+        consumer.accept(doOp(opName, s1, s2));
+    }));
+    streams.add(shapeStream(allBuilds).filter(pre1).mapMulti((s1, consumer) -> {
+      for (int s2 : set2)
+        consumer.accept(doOp(opName, s1, s2));
+    }));
+    streams.add(shapeStream(set1).mapMulti((s1, consumer) -> {
+      for (int s2 : set2)
+        consumer.accept(doOp(opName, s1, s2));
+    }));
   }
 
   void saveResults() {

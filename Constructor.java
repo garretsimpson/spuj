@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.IntBinaryOperator;
+import java.util.function.IntPredicate;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.IntStream;
 
@@ -13,7 +14,7 @@ import java.util.stream.IntStream;
  */
 public class Constructor {
   private static final int MAX_ITERS = 100;
-  private static final int MAX_LAYERS = 2;
+  private static final int MAX_LAYERS = 3;
   private static final int BATCH_SIZE = 10000000;
 
   final String RESULTS = "BigData/shapes.txt";
@@ -27,12 +28,12 @@ public class Constructor {
   private Set<Integer> allShapes = new HashSet<>();
   private Set<Integer> newShapes = Collections.synchronizedSet(new HashSet<>());
 
-  private IntStream allShapeStream() {
-    return allShapes.stream().mapToInt(Integer::intValue);
+  private IntStream shapeStream(Set<Integer> shapes) {
+    return shapes.stream().mapToInt(Integer::intValue);
   }
 
-  private IntStream oldShapeStream(Set<Integer> newShapes) {
-    return allShapeStream().filter(s -> !newShapes.contains(s));
+  private IntStream shapeStream(int[] shapes) {
+    return Arrays.stream(shapes);
   }
 
   Set<Integer> takeValues(Set<Integer> srcSet, int maxValues) {
@@ -44,10 +45,6 @@ public class Constructor {
     }
     srcSet.removeAll(dstSet);
     return dstSet;
-  }
-
-  private boolean isNew(int shape) {
-    return !allShapes.contains(shape);
   }
 
   private boolean maxLayers(int shape) {
@@ -70,7 +67,7 @@ public class Constructor {
     System.out.println("Input shapes");
     Tools.displayShapes(shapes);
 
-    IntStream.of(shapes).forEach(newShapes::add);
+    Arrays.stream(shapes).forEach(newShapes::add);
     ShapeFile.delete(RESULTS);
 
     Set<Integer> inputShapes;
@@ -98,60 +95,52 @@ public class Constructor {
    */
   void makeShapes(Set<Integer> inputShapes) {
     List<IntStream> streams = new ArrayList<>();
-    int[] input = inputShapes.stream().mapToInt(Integer::intValue).toArray();
-    int inputLen = input.length;
+    IntStream stream;
+    int inputLen = inputShapes.size();
 
     System.out.printf("ONE_OPS %d %d > %d\n", ONE_OPS.length, inputLen, 1l * ONE_OPS.length * inputLen);
     for (IntUnaryOperator op : ONE_OPS) {
-      streams.add(IntStream.of(input).map(op));
+      streams.add(shapeStream(inputShapes).map(op));
     }
 
     System.out.printf("TWO_OPS %d %d %d > %d\n", TWO_OPS.length, inputLen, allShapes.size(),
         1l * TWO_OPS.length * ((1l * inputLen * inputLen) + (2l * inputLen * allShapes.size())));
+    makeStreams(streams, inputShapes, Ops.Name.FAST_SWAP, x -> Shape.isLeftHalf(x), x -> Shape.isRightHalf(x));
+    makeStreams(streams, inputShapes, Ops.Name.STACK, this::oneLayerNoCrystal, x -> true);
 
-    // swap
-    int[] lefts = IntStream.of(input).filter(Shape::isLeftHalf).toArray();
-    streams.add(allShapeStream().filter(Shape::isRightHalf).mapMulti((s2, consumer) -> {
-      for (int s1 : lefts)
-        consumer.accept(Ops.fastSwapRight(s1, s2));
-    }));
-    int[] rights = IntStream.of(input).filter(Shape::isRightHalf).toArray();
-    streams.add(allShapeStream().filter(Shape::isLeftHalf).mapMulti((s1, consumer) -> {
-      for (int s2 : rights)
-        consumer.accept(Ops.fastSwapRight(s1, s2));
-    }));
-    streams.add(IntStream.of(lefts).mapMulti((s1, consumer) -> {
-      for (int s2 : rights)
-        consumer.accept(Ops.fastSwapRight(s1, s2));
-    }));
-
-    // stack
-    int[] tops = IntStream.of(input).filter(this::oneLayerNoCrystal).toArray();
-    streams.add(allShapeStream().mapMulti((s2, consumer) -> {
-      for (int s1 : tops)
-        consumer.accept(Ops.stack(s1, s2));
-    }));
-    streams.add(allShapeStream().filter(this::oneLayerNoCrystal).mapMulti((s1, consumer) -> {
-      for (int s2 : input)
-        consumer.accept(Ops.stack(s1, s2));
-    }));
-    streams.add(IntStream.of(tops).mapMulti((s1, consumer) -> {
-      for (int s2 : input)
-        consumer.accept(Ops.stack(s1, s2));
-    }));
-
-    IntStream stream = streams.parallelStream().flatMapToInt(s -> s);
-    stream = stream.filter(this::maxLayers);
+    stream = streams.parallelStream().flatMapToInt(s -> s);
+    stream = stream.filter(s -> this.maxLayers(s));
     stream = stream.filter(s -> !allShapes.contains(s));
     stream = stream.filter(s -> !inputShapes.contains(s));
+    // stream = stream.filter(s -> !newShapes.contains(s));
     stream.forEach(s -> newShapes.add(s));
   }
 
+  /* This "completes the square" by doing all operations that have not been done before. */
+  void makeStreams(List<IntStream> streams, Set<Integer> inputShapes, Ops.Name opName, IntPredicate pre1,
+      IntPredicate pre2) {
+    int[] set1 = shapeStream(inputShapes).filter(pre1).toArray();
+    int[] set2 = shapeStream(inputShapes).filter(pre2).toArray();
+    streams.add(shapeStream(allShapes).filter(pre2).mapMulti((s2, consumer) -> {
+      for (int s1 : set1)
+        consumer.accept(Ops.invoke(opName, s1, s2));
+    }));
+    streams.add(shapeStream(allShapes).filter(pre1).mapMulti((s1, consumer) -> {
+      for (int s2 : set2)
+        consumer.accept(Ops.invoke(opName, s1, s2));
+    }));
+    streams.add(shapeStream(set1).mapMulti((s1, consumer) -> {
+      for (int s2 : set2)
+        consumer.accept(Ops.invoke(opName, s1, s2));
+    }));
+  }
+
   void displayResults() {
-    int[] lefts = allShapeStream().filter(Shape::isLeftHalf).toArray();
-    int[] rights = allShapeStream().filter(Shape::isRightHalf).toArray();
-    int[] noCrystal = allShapeStream().filter(v -> !Shape.hasCrystal(v)).sorted().toArray();
-    int[] oneLayerNoCrystal = allShapeStream().filter(Shape::isOneLayer).filter(v -> !Shape.hasCrystal(v)).toArray();
+    int[] lefts = shapeStream(allShapes).filter(Shape::isLeftHalf).toArray();
+    int[] rights = shapeStream(allShapes).filter(Shape::isRightHalf).toArray();
+    int[] noCrystal = shapeStream(allShapes).filter(v -> !Shape.hasCrystal(v)).sorted().toArray();
+    int[] oneLayerNoCrystal = shapeStream(allShapes).filter(Shape::isOneLayer).filter(v -> !Shape.hasCrystal(v))
+        .toArray();
 
     System.out.printf("lefts: %d, rights: %d\n", lefts.length, rights.length);
     System.out.printf("noCrystal: %d\n", noCrystal.length);

@@ -40,7 +40,8 @@ class Ops {
     CRYSTAL(0x07, "XX") {},
     SWAP_RIGHT(0x10, "SR") {},
     SWAP_LEFT(0x11, "SL") {},
-    STACK(0x12, "ST") {};
+    FAST_SWAP(0x12, "SW") {},
+    STACK(0x13, "ST") {};
 
     byte value;
     String code;
@@ -94,6 +95,8 @@ class Ops {
       return swapRight(shape1, shape2);
     case SWAP_LEFT:
       return swapLeft(shape1, shape2);
+    case FAST_SWAP:
+      return fastSwap(shape1, shape2);
     case STACK:
       return stack(shape1, shape2);
     default:
@@ -468,6 +471,11 @@ class Ops {
   static int fastSwapRight(int left, int right) {
     // if (!Shape.isLeftHalf(left) || !Shape.isRightHalf(right))
     // return 0;
+    Stats.SWAP.increment();
+    return left | right;
+  }
+
+  static int fastSwap(int left, int right) {
     Stats.SWAP.increment();
     return left | right;
   }
