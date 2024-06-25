@@ -1219,6 +1219,249 @@ ITER #25
 ONE_OPS 7 100000 > 700000
 TWO_OPS 3 100000 1884465 > 1160679000000
 
+file: shapes3_0.db
+
 Did not find all the shapes yet.
 Maybe need a check - if total number of shapes reaches the known value, then copy all shapes over and quit early.
+
+TODO
+- Optmize Build and Solution classes.
+  - Maybe they can be just one class.
+  - Simplify the constructors.
+- Just use Ops.Name for the op in Build class.
+  - This probably makes it bigger, but makes the code to calculate the cost smaller.
+
+Ran Solver for 4-layers, 10 iters.
+- It is taking hours for each batch of 100,000 input shapes.
+- Sometimes finding over 1M for each batch.
+- CPU is under 20% most of the time.
+- Very slow - need a way to find why it is taking so long.
+  - More stats?
+  - peformance analysis tools?
+  - Java telemetry?  That can work on multi-threaded code?
+- The differences are:
+  - using Streams of Solutions rather than IntStreams.
+  - More one ops
+  - Two swap ops instead of one
+  - More stack ops (no crystal on top, but can be more than one layer)
+  -> It's the stacking ops most likely.  But I did change the Stream to IntStream.
+- I suspect it's the Streams of class objects rather than primitive int values.
+  - more data alocation, more data to access, etc.
+- Is there a way to do solutions with just IntStreams?
+  - Need result shape, op, one or two input shapes, cost.
+  - Maybe these can be stored in one place, rather than pass them through Streams?
+- Also, Constructor and Solver are almost identical code.
+  - Should be a way to combine them, without making Constructor slow
+  - Use generics?
+  - Store the builds / solutions as an option?
+
+ITER #10
+ONE_OPS 7 100000 > 700000
+TWO_OPS 3 100000 451238 > 300742800000
+Writing file: BigData/shapes.db
+TODO 5654847
+
+Writing file: BigData/shapes.db
+Time: 25416576
+cut: 1102476, swap: 1610496, stack: 179984168142, rotate: 1653714, pinPush 551238, crystal 551238, collapse: 1653714
+
+Sorting file: BigData/shapes.db
+Reading file: BigData/shapes.db
+Error reading file: BigData/shapes.db
+java.util.InputMismatchException: For input string: "f0000fff" under radix 16
+        at java.base/java.util.Scanner.nextInt(Scanner.java:2264)
+        at java.base/java.util.Scanner.nextInt(Scanner.java:2212)
+        at ShapeFile.readDB(ShapeFile.java:85)
+        at ShapeFile.sort(ShapeFile.java:102)
+        at Main.makeShapes(Main.java:33)
+        at Main.main(Main.java:19)
+Number of values read: 11
+Writing file: BigData/shapes.db
+
+Oh no, looks like the data was overwriten???
+Yep, only 11 shapes in 7 hours.
+It had found 551,238 + 5,654,847 which is 6M out of 350M
+
+TODO
+- don't overwrite files
+- Looks like a problem with Scanner and negative int values
+
+TODO
+- It is possible to find parts with lower cost.  What happens?
+  - They replace an existing part.
+  - Which may change the cost of a next level part, or
+  - might replace a part that would have been used?
+- Might have to keep the new shapes found in order.
+  - to ensure that low-level parts are made before parts that take more steps.
+- Not sure if the tiered todo list is needed.
+
+The one-layer top makes a big difference...
+Time: 2940
+cut: 70560, swap: 32400, stack: 113742720, rotate: 105840, pinPush 35280, crystal 35280, collapse: 105840
+Time: 401
+cut: 70560, swap: 32400, stack: 2822400, rotate: 105840, pinPush 35280, crystal 35280, collapse: 105840
+
+stack is total * 3224 vs total * 80
+
+There are 40 times more stack ops, but only 7 times slower.  So I guess that is okay?
+
+Adding the other Swap does not make a significant difference.
+
+Time: 452
+cut: 70560, swap: 64800, stack: 2822400, rotate: 105840, pinPush 35280, crystal 35280, collapse: 105840
+
+3-layer, one-layer tops...
+
+Solver w/100,000 batch size
+ITER #45
+Time: 17496
+cut: 7731174, swap: 6444050, stack: 309246960, rotate: 11596761, pinPush 3865587, crystal 3865587, collapse: 11596761
+
+Constructor w/10,000,000 batch size
+ITER #21
+Time: 15618
+cut: 3865587, swap: 3222025, stack: 309246960, rotate: 3865587, pinPush 3865587, crystal 3865587, collapse: 7731174
+
+About the same amount of time.
+with multi-layer tops, it takes much longer (hours?)
+
+TODO
+- Intercept a ctrl-c signal, and save the intermediate results.  DONE
+
+I can/should filter out ops that return the same shape.
+
+Added costs to builds.
+
+TODO
+- Need more than a byte to store the cost.  DONE
+
+00d700be,SW,00c4008c,00130032,78
+
+Why does crystal increase the cost by 8?  Should be 2.
+            000a000f <- XX(00000005)  17
+              00000005 <- ST(00000001, 00000004)   9
+
+The db file has this:
+000a000f,XX,00000005,00000000,11
+
+hex problem? yep
+
+00ba007b,RR,00d500bd,00000000,004a
+00db007e,SW,00130032,00c8004c,004f
+
+... and the max costs changes each run...
+
+Maybe it's the parallel streams finding different solutions?
+I hope it's not a thread safety problem.
+
+Implemented low cost replacement.
+
+00ff005f,SW,00cc004c,00330013,2d  // I think this is my angry bird shape
+00ff00fa,SW,00cc00c8,00330032,2d
+
+Tue Jun 25 14:33:38 PDT 2024
+
+Reading file: BigData/shapes.db
+Number of values read: 35280
+Find solution for: 00ff005f
+ 45 00ff005f <- SW(00cc004c, 00330013)
+ 23   00cc004c <- CL(00dc006f)
+ 22     00dc006f <- RL(00b900cf)
+ 21       00b900cf <- SW(008800cc, 00310003)
+ 12         008800cc <- CL(008800ff)
+ 11           008800ff <- XX(00000077)
+  9             00000077 <- SW(00000033, 00000044)
+  4               00000033 <- CR(000000ff)
+  3                 000000ff <- ST(0000000f, 0000000f)
+  1                   0000000f <--
+  1                   0000000f <--
+  6               00000044 <- CL(00000066)
+  5                 00000066 <- RL(000000cc)
+  4                   000000cc <- CL(000000ff)
+  3                     000000ff <- ST(0000000f, 0000000f)
+  1                       0000000f <--
+  1                       0000000f <--
+ 10         00310003 <- CR(00f1000f)
+  9           00f1000f <- ST(000f0000, 0001000f)
+  1             000f0000 <--
+  7             0001000f <- XX(0000000e)
+  5               0000000e <- SW(00000002, 0000000c)
+  4                 00000002 <- CR(00000006)
+  3                   00000006 <- RL(0000000c)
+  2                     0000000c <- CL(0000000f)
+  1                       0000000f <--
+  2                 0000000c <- CL(0000000f)
+  1                   0000000f <--
+ 23   00330013 <- CR(0073009f)
+ 22     0073009f <- RR(00b900cf)
+ 21       00b900cf <- SW(008800cc, 00310003)
+ 12         008800cc <- CL(008800ff)
+ 11           008800ff <- XX(00000077)
+  9             00000077 <- SW(00000033, 00000044)
+  4               00000033 <- CR(000000ff)
+  3                 000000ff <- ST(0000000f, 0000000f)
+  1                   0000000f <--
+  1                   0000000f <--
+  6               00000044 <- CL(00000066)
+  5                 00000066 <- RL(000000cc)
+  4                   000000cc <- CL(000000ff)
+  3                     000000ff <- ST(0000000f, 0000000f)
+  1                       0000000f <--
+  1                       0000000f <--
+ 10         00310003 <- CR(00f1000f)
+  9           00f1000f <- ST(000f0000, 0001000f)
+  1             000f0000 <--
+  7             0001000f <- XX(0000000e)
+  5               0000000e <- SW(00000002, 0000000c)
+  4                 00000002 <- CR(00000006)
+  3                   00000006 <- RL(0000000c)
+  2                     0000000c <- CL(0000000f)
+  1                       0000000f <--
+  2                 0000000c <- CL(0000000f)
+  1                   0000000f <--
+
+Find solutions for 2-layer shapes.  using multi-layer tops.
+
+ITER #13
+ONE_OPS 7 820 > 5740
+TWO_OPS 3 820 34460 > 171560400
+DONE
+
+Time: 3309
+cut: 70560, swap: 64800, stack: 113742720, rotate: 105840, pinPush 35280, crystal 35280, collapse: 105840
+
+Solver results
+size: 35280
+Writing file: BigData/shapes.db
+max cost: 45 (2d)
+
+file shapes2_6.db
+
+Find solutions for 3-layer shapes, using only one-layer tops...
+
+ITER #45
+ONE_OPS 7 25416 > 177912
+TWO_OPS 3 25416 3840171 > 587548635984
+DONE
+
+Time: 41523
+cut: 7731174, swap: 6444050, stack: 309246960, rotate: 11596761, pinPush 3865587, crystal 3865587, collapse: 11596761
+
+Solver results
+size: 3865587
+Writing file: BigData/shapes.db
+max cost: 74 (4a)
+
+00ff005f,RR,00ff00af,00000000,2e
+0f030f3f,RR,0f090f9f,00000000,4a
+
+file shapes3_1.db
+
+I don't know why the cost was one more than it was with 2-layer solution.
+Maybe the order of the solver, but I thought it should be trying all possible combos.
+
+TODO
+- When cost is lower, could replace Build values rather than make new Build.
+- tiered todo list.  But I'm not sure if that is needed or not.
+
 

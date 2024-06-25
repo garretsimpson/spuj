@@ -86,6 +86,8 @@ public class Constructor {
         break;
       }
     }
+    if (newShapes.size() > 0)
+      ShapeFile.append(RESULTS, newShapes);
   }
 
   /**
@@ -150,6 +152,11 @@ public class Constructor {
 
   void saveResults() {
     ShapeFile.write(RESULTS, allShapes);
+  }
+
+  void shutdown() {
+    if (newShapes.size() > 0)
+      ShapeFile.append(RESULTS, newShapes);
   }
 
 }

@@ -55,6 +55,8 @@ public class ShapeFile {
       data.forEach(value -> out.printf("%08x\n", value));
     } catch (Exception e) {
       System.err.printf("Error writing file: %s\n", name);
+      System.err.println(e);
+      // e.printStackTrace();
     }
   }
 
@@ -62,11 +64,10 @@ public class ShapeFile {
     System.out.printf("Writing file: %s\n", name);
     try (FileWriter file = new FileWriter(name, append)) {
       PrintWriter out = new PrintWriter(file);
-      // data.forEach((shape, build) -> out.printf("%08x,%s,%08x,%08x\n", shape, Ops.getCode(build.op), build.shape1,
-      // build.shape2));
       data.keySet().stream().sorted().forEach(shape -> {
         Solver.Build build = data.get(shape);
-        out.printf("%08x,%s,%08x,%08x\n", shape, Ops.getCode(build.op), build.shape1, build.shape2);
+        out.printf("%08x,%s,%08x,%08x,%02x\n", shape, Ops.nameByValue.get((int) build.op).code, build.shape1,
+            build.shape2, build.cost);
       });
     } catch (Exception e) {
       System.err.printf("Error writing file: %s\n", name);
@@ -76,7 +77,7 @@ public class ShapeFile {
   static Map<Integer, Solver.Build> readDB(String name) {
     System.out.printf("Reading file: %s\n", name);
     Map<Integer, Solver.Build> dataMap = new HashMap<>();
-    Integer shape, shape1, shape2;
+    Integer shape, shape1, shape2, cost;
     String opCode;
     try (Scanner scan = new Scanner(new FileReader(name))) {
       scan.useRadix(16);
@@ -86,7 +87,8 @@ public class ShapeFile {
         opCode = scan.next();
         shape1 = scan.nextInt();
         shape2 = scan.nextInt();
-        dataMap.put(shape, new Solver.Build(Ops.getValue(opCode), shape1, shape2));
+        cost = scan.nextInt();
+        dataMap.put(shape, new Solver.Build(Ops.nameByCode.get(opCode).value, shape1, shape2, cost));
       }
     } catch (Exception e) {
       System.err.printf("Error reading file: %s\n", name);

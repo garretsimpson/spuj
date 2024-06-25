@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -29,6 +30,7 @@ public class Tests {
   static final String IMP_SHAPES_FILENAME_2 = "data/impShapes2.txt";
   static final String IMP_SHAPES_FILENAME_3 = "data/impShapes3.txt";
 
+  static final String SOLUTION_FILENAME = "BigData/shapes.db";
   static final String SOLUTION_FILENAME_2 = "BigData/shapes2.db";
 
   static final int[] FLOAT_MASKS = { 0b01110010, 0b10110001, 0b11011000, 0b11100100 };
@@ -36,11 +38,11 @@ public class Tests {
 
   private static final int MAX_LAYERS = 3;
 
-  private static final String NOP_CODE = Ops.Name.NOP.code;
+  static final String NOP_CODE = Ops.Name.NOP.code; // force Ops.Name to init
 
   static Random rng = new Random();
   static Set<Integer> allShapes, impShapes;
-  static Map<Integer, Solver.Build> allBuilds = new HashMap<>();
+  static Map<Integer, Solver.Build> allBuilds;
 
   private static IntStream allShapeStream() {
     return allShapes.stream().mapToInt(Integer::intValue);
@@ -52,14 +54,15 @@ public class Tests {
   }
 
   static void run() {
-    loadSolutions();
+    loadSolutions(SOLUTION_FILENAME);
     // loadShapes();
     // shapeStats();
     // findImpossibleShapes();
     // filterPossibleShapes();
     // filterImpossibleShapes();
-    findSolution(0x1);
+    findSolution(0x00ff005f);
     // findSolution(0x000f0000);
+    // code2();
   }
 
   private static void loadShapes() {
@@ -67,8 +70,8 @@ public class Tests {
     // impShapes = ShapeFile.read(IMP_SHAPES_FILENAME_3);
   }
 
-  private static void loadSolutions() {
-    allBuilds = ShapeFile.readDB(SOLUTION_FILENAME_2);
+  private static void loadSolutions(String name) {
+    allBuilds = ShapeFile.readDB(name);
   }
 
   static void shapeStats() {
@@ -386,15 +389,15 @@ public class Tests {
 
   static void code2() {
     final int MAX_NUM = 10;
-    Set<Integer> srcSet = new HashSet<>();
-    Set<Integer> dstSet = new HashSet<>();
+    Set<Integer> srcSet = new LinkedHashSet<>();
+    Set<Integer> dstSet = new LinkedHashSet<>();
 
     // Init source
     IntStream.rangeClosed(1, 100).forEach(v -> srcSet.add(v));
     // Take values
     int n = MAX_NUM;
     for (int v : srcSet) {
-      if (n-- == 0)
+      if (n-- <= 0)
         break;
       dstSet.add(v);
     }
@@ -402,7 +405,7 @@ public class Tests {
     int[] result = dstSet.stream().mapToInt(Integer::intValue).toArray();
 
     System.out.printf("src: %d, dst: %d\n", srcSet.size(), dstSet.size());
-    System.out.printf("Source:\n%s\n", Arrays.toString(result));
+    System.out.printf("Result:\n%s\n", Arrays.toString(result));
   }
 
   static void file1() {
@@ -416,7 +419,7 @@ public class Tests {
   }
 
   static String buildAsString(int shape, Solver.Build build) {
-    String opCode = Ops.getCode(build.op);
+    String opCode = Ops.nameByValue.get((int) build.op).code;
     if (build.op == Ops.Name.NOP.value)
       return String.format("%08x <--", shape);
     else if (build.shape2 == 0)
@@ -427,6 +430,7 @@ public class Tests {
 
   static void findSolution(int shape, int indent) {
     Solver.Build build = allBuilds.get(shape);
+    System.out.printf("%3d ", build.cost);
     System.out.println("  ".repeat(indent) + buildAsString(shape, build));
     if (build.op == Ops.Name.NOP.value)
       return;

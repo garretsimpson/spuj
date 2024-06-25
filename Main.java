@@ -21,16 +21,25 @@ public class Main {
 
   static void makeShapes() {
     Ops.Stats.clear();
+
     // Constructor f = new Constructor();
     Solver f = new Solver();
+    Thread exitHook = new Thread(() -> {
+      System.out.println("Shutdown");
+      f.shutdown();
+    });
+    Runtime.getRuntime().addShutdownHook(exitHook);
+
     long before = new Date().getTime();
     f.run();
     long after = new Date().getTime();
     System.out.printf("Time: %d\n", after - before);
     System.out.println(Ops.Stats.asString());
 
-    // f.saveResults();
-    ShapeFile.sort("BigData/shapes.db");
+    Runtime.getRuntime().removeShutdownHook(exitHook);
+
+    f.saveResults();
+    // ShapeFile.sort("BigData/shapes.db");
   }
 
 }

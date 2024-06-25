@@ -49,21 +49,26 @@ class Ops {
     Name(int value, String code) {
       this.value = (byte) value;
       this.code = code;
-      nameCodes.put(value, code);
-      nameValues.put(code, value);
+      // nameCodes.put(value, code);
+      // nameValues.put(code, value);
+      nameByValue.put(value, this);
+      nameByCode.put(code, this);
     }
   }
 
-  static HashMap<Integer, String> nameCodes = new HashMap<>();
-  static HashMap<String, Integer> nameValues = new HashMap<>();
+  // static HashMap<Integer, String> nameCodes = new HashMap<>();
+  // static HashMap<String, Integer> nameValues = new HashMap<>();
+  // static final String NOP_CODE = Name.NOP.code; // force Ops.Name to init
+  static HashMap<Integer, Name> nameByValue = new HashMap<>();
+  static HashMap<String, Name> nameByCode = new HashMap<>();
 
-  static String getCode(byte value) {
-    return nameCodes.get((int) value);
-  }
+  // static String getCode(int value) {
+  // return nameCodes.get(value);
+  // }
 
-  static byte getValue(String code) {
-    return (byte) nameValues.get(code).intValue();
-  }
+  // static int getValue(String code) {
+  // return nameValues.get(code).intValue();
+  // }
 
   static int invoke(Name opName, int shape) {
     switch (opName) {
@@ -149,7 +154,7 @@ class Ops {
   }
 
   /**
-   * Identity operation
+   * Identity operation.
    * 
    * @param shape
    * @return
