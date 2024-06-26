@@ -3,7 +3,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -60,8 +59,9 @@ public class Tests {
     // findImpossibleShapes();
     // filterPossibleShapes();
     // filterImpossibleShapes();
-    findSolution(0x00ff005f);
-    // findSolution(0x000f0000);
+    // findSolution(0x00ff005f);
+    // findSolution(0x0f030f3f);
+    findSolution(0x000f0000);
     // code2();
   }
 

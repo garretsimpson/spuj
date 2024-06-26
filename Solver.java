@@ -17,7 +17,7 @@ import java.util.stream.IntStream;
  */
 public class Solver {
   private static final int MAX_ITERS = 100;
-  private static final int MAX_LAYERS = 2;
+  private static final int MAX_LAYERS = 3;
   private static final int BATCH_SIZE = 100000;
 
   private static final int PRIM_COST = 1;
@@ -51,8 +51,20 @@ public class Solver {
     }
   }
 
+  static String buildAsString(int shape, Build build) {
+    String result;
+    String opCode = Ops.nameByValue.get((int) build.op).code;
+
+    if (build.shape2 == 0)
+      result = String.format("%3d %08x <- %s(%08x)", build.cost, shape, opCode, build.shape1);
+    else
+      result = String.format("%3d %08x <- %s(%08x, %08x)", build.cost, shape, opCode, build.shape1, build.shape2);
+    return result;
+  }
+
   private Set<Integer> allShapes = new HashSet<>();
   private Set<Integer> newShapes = Collections.synchronizedSet(new LinkedHashSet<>());
+  private Set<Integer> lowShapes = Collections.synchronizedSet(new LinkedHashSet<>());
 
   private Map<Integer, Build> allBuilds = Collections.synchronizedMap(new HashMap<>());
   private static Map<Ops.Name, Integer> opCosts = new HashMap<>();
@@ -107,8 +119,16 @@ public class Solver {
       return 0;
     Build oldBuild = allBuilds.get(result);
     int cost = cost(opName, shape);
-    if ((oldBuild == null) || (cost < oldBuild.cost)) {
+    if (oldBuild == null) {
       allBuilds.put(result, new Build(opName.value, shape, cost));
+    } else if (cost < oldBuild.cost) {
+      // System.out.printf("OLD: %s\n", buildAsString(result, oldBuild));
+      oldBuild.op = opName.value;
+      oldBuild.shape1 = shape;
+      oldBuild.shape2 = 0;
+      oldBuild.cost = cost;
+      // System.out.printf("NEW: %s\n", buildAsString(result, oldBuild));
+      lowShapes.add(result);
     }
     return result;
   }
@@ -119,8 +139,16 @@ public class Solver {
       return 0;
     Build oldBuild = allBuilds.get(result);
     int cost = cost(opName, shape1, shape2);
-    if ((oldBuild == null) || (cost < oldBuild.cost)) {
+    if (oldBuild == null) {
       allBuilds.put(result, new Build(opName.value, shape1, shape2, cost));
+    } else if (cost < oldBuild.cost) {
+      // System.out.printf("OLD: %s\n", buildAsString(result, oldBuild));
+      oldBuild.op = opName.value;
+      oldBuild.shape1 = shape1;
+      oldBuild.shape2 = shape2;
+      oldBuild.cost = cost;
+      // System.out.printf("NEW: %s\n", buildAsString(result, oldBuild));
+      lowShapes.add(result);
     }
     return result;
   }
@@ -164,10 +192,13 @@ public class Solver {
       System.out.printf("ITER #%d\n", i);
       inputShapes = takeValues(newShapes, BATCH_SIZE);
       /* TODO: Insert inputBuilds into allBuilds before calling makeShapes() */
+      lowShapes.clear();
       makeShapes(inputShapes);
       allShapes.addAll(inputShapes);
       // ShapeFile.append(RESULTS, inputShapes);
 
+      newShapes.addAll(lowShapes);
+      System.out.printf("LOW %d\n", lowShapes.size());
       if (newShapes.size() > 0) {
         System.out.printf("TODO %d\n\n", newShapes.size());
       } else {
@@ -198,8 +229,8 @@ public class Solver {
         1l * TWO_OPS.length * ((1l * inputLen * inputLen) + (2l * inputLen * allShapes.size())));
     makeStreams(streams, inputShapes, Ops.Name.FAST_SWAP, x -> Shape.isLeftHalf(x), x -> Shape.isRightHalf(x));
     makeStreams(streams, inputShapes, Ops.Name.FAST_SWAP, x -> Shape.isRightHalf(x), x -> Shape.isLeftHalf(x));
-    makeStreams(streams, inputShapes, Ops.Name.STACK, x -> !Shape.hasCrystal(x), x -> true);
-    // makeStreams(streams, inputShapes, Ops.Name.STACK, x -> this.oneLayerNoCrystal(x), x -> true);
+    // makeStreams(streams, inputShapes, Ops.Name.STACK, x -> !Shape.hasCrystal(x), x -> true);
+    makeStreams(streams, inputShapes, Ops.Name.STACK, x -> this.oneLayerNoCrystal(x), x -> true);
 
     stream = streams.parallelStream().flatMapToInt(s -> s);
     // stream = stream.filter(shape -> this.maxLayers(shape));

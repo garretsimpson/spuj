@@ -1459,9 +1459,151 @@ file shapes3_1.db
 
 I don't know why the cost was one more than it was with 2-layer solution.
 Maybe the order of the solver, but I thought it should be trying all possible combos.
+Maybe it's the stacking change (one vs multi-layer)?  No, the 2-layer solution only as 1-layer tops.
+
+Ran 3-layer again, got a different result...
+00ff005f,SW,00330013,00cc004c,2d
 
 TODO
 - When cost is lower, could replace Build values rather than make new Build.
-- tiered todo list.  But I'm not sure if that is needed or not.
+- Use a tiered todo list?  But I'm not sure if that is needed or not.
+- How to make the results determinate / the same every time?
+- currently, I'm not sure the cost is always correct.
+  - finding a lower cost solution replaces a shape.
+  - if the replaced shape was used before, then the derived shapes are not updated.
+  - if the replaced shape was not used before, then it might have been skipped as a higher cost solution.
+  - maybe the only way to have accurate cost is to actually build a solution tree.
+  - replacing a shape would change the cost of all derived shapes
+  - but more importantly, should be reused as a new todo shape <---
+- currently, there's a disjoint -
+  - every op performed might make a new solution, but might not make a new shape.
+- cost is always increasing. That is the cost of a solution is more than the cost of the parts that are used to make it.
+  - unless there are zero cost ops.
+- so how can a lower cost solution be found?  Examples?
 
+OLD:   3 000f00f0 <- ST(0000000f, 000f0000)
+NEW:   2 000f00f0 <- PP(0000000f)
+OLD:   3 00ff0000 <- ST(000f0000, 000f0000)
+NEW:   2 00ff0000 <- PP(000f0000)
+Pinpush (one input) is less expesive than stack (two inputs).
 
+OLD:   5 000f00ff <- ST(0000000f, 000f000f)
+NEW:   4 000f00ff <- XX(000f00f0)
+crystal shortcut - one crystal op instead of two
+
+OLD:   8 003f00ff <- XX(000f00cf)
+NEW:   5 003f00ff <- XX(000c00c0)
+Crystal makes the same shape, but with less expensive input shape.
+
+OLD:   9 00cf003f <- ST(00000003, 00cf000f)
+NEW:   7 00cf003f <- ST(000c0003, 000f000f)
+stacker shortcut
+
+OLD:   7 003f00c0 <- SW(000c00c0, 00330000)
+NEW:   4 003f00c0 <- PP(0003000c)
+Pinpush (one input) is less expesive than swap (two inputs).
+
+Added lower cost shapes back to todo list.
+
+Ran 3-layers, one-layer tops...
+
+ITER #55
+ONE_OPS 7 68 > 476
+TWO_OPS 3 68 3865587 > 1577173368
+LOW 0
+DONE
+
+Time: 53810
+cut: 9456894, swap: 8193278, stack: 378791820, rotate: 14185341, pinPush 4728447, crystal 4728447, collapse: 14185341
+
+Solver results
+size: 3865587
+Writing file: BigData/shapes.db
+max cost: 72 (48)
+
+Took longer, but it finished.
+It has a lower max cost, but not sure since it can vary.
+
+00ff005f,SW,00cc004c,00330013,2d - Angry bird is back to lower cost
+0f030f3f,RR,0f090f9f,00000000,48
+
+file shapes3_2.db
+
+What if I make crystal cost 1?
+
+ITER #51
+ONE_OPS 7 3870 > 27090
+TWO_OPS 3 3870 3865587 > 89803860840
+LOW 0
+DONE
+
+Time: 49352
+cut: 8885784, swap: 7514278, stack: 355947600, rotate: 13328676, pinPush 4442892, crystal 4442892, collapse: 13328676
+
+Solver results
+size: 3865587
+Writing file: BigData/shapes.db
+max cost: 68 (44)
+
+file shapes3_3.db
+
+00ff005f,SW,00cc004c,00330013,29
+0f030f3f,RR,0f090f9f,00000000,44
+
+Max cost is now 68 instead of 72.
+That's because there are four crystal ops, and they cost one less each.
+Still pretty high.
+
+Pins with only flats...
+ 15 000f0000 <- SW(000c0000, 00030000)
+  8   000c0000 <- CL(00ef00f0)
+  7     00ef00f0 <- PP(000e000f)
+  6       000e000f <- XX(00000001)
+  4         00000001 <- CR(00000009)
+  3           00000009 <- RL(00000003)
+  2             00000003 <- CR(0000000f)
+  1               0000000f <--
+  8   00030000 <- CR(00bf00f0)
+  7     00bf00f0 <- PP(000b000f)
+  6       000b000f <- XX(00000004)
+  4         00000004 <- CL(00000006)
+  3           00000006 <- RL(0000000c)
+  2             0000000c <- CL(0000000f)
+  1               0000000f <--
+
+This makes quarters and the crystals.
+Isn't cheaper to crystalize half shapes?
+I guess this is cheaper because it uses only one swap instead of 2.
+
+full > half > crystal > pinpush  5
+x2 5
+then swap 11 (crystals on pins 00ff00f0)
+x2 11
+then swap 23
+
+000f0000 <- SW(00ff00f0, 00ff00f0)
+  00ff00f0,PP,000f000f,00000000,08  // full crystal on pins
+    000f000f,XX,000c000c,00000000,07  // full crystal
+      000c000c,CL,000c000f,00000000,05  // half cystal
+        000c000f,XX,00000003,00000000,04  // half crystal / half solid
+          00000003,CR,0000000f,00000000,02  // half solid
+  
+swaps are expensive because they sum the cost of both inputs.
+
+Verified that the most costly (72) 3-layer shape solution works.
+It uses exactly the same crystal breaking and shape falling technique and shape I found when trying to make gap under crystal.
+It also make a crystal-solid-crystal corner with one crystal maker.
+It does each of these twice and swaps them to make: 0f030f3f ccccRuRu:RuRu----:cccccccc
+
+3-layer, one-layer tops...
+
+ITER #55
+ONE_OPS 7 846 > 5922
+TWO_OPS 3 846 3865587 > 19623866760
+LOW 0
+DONE
+
+Time: 58066
+cut: 9515778, swap: 8270798, stack: 381147348, rotate: 14273667, pinPush 4757889, crystal 4757889, collapse: 14273667
+
+About 60 seconds to find low cost solutions to 3,865,587 shapes with less than 4-layers.
