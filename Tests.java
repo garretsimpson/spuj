@@ -53,7 +53,7 @@ public class Tests {
   }
 
   static void run() {
-    loadSolutions(SOLUTION_FILENAME);
+    // loadSolutions(SOLUTION_FILENAME);
     // loadShapes();
     // shapeStats();
     // findImpossibleShapes();
@@ -61,8 +61,11 @@ public class Tests {
     // filterImpossibleShapes();
     // findSolution(0x00ff005f);
     // findSolution(0x0f030f3f);
-    findSolution(0x000f0000);
+    // findSolution(0x0f330f3f);
+    // findSolution(0x0003001c);
     // code2();
+    // code3();
+    compFiles("BigData/shapes-4.db", "BigData/shapes-5.db");
   }
 
   private static void loadShapes() {
@@ -428,20 +431,54 @@ public class Tests {
       return String.format("%08x <- %s(%08x, %08x)", shape, opCode, build.shape1, build.shape2);
   }
 
-  static void findSolution(int shape, int indent) {
-    Solver.Build build = allBuilds.get(shape);
+  static void findSolution(Map<Integer, Solver.Build> builds, int shape, int indent) {
+    Solver.Build build = builds.get(shape);
     System.out.printf("%3d ", build.cost);
     System.out.println("  ".repeat(indent) + buildAsString(shape, build));
     if (build.op == Ops.Name.NOP.value)
       return;
-    findSolution(build.shape1, indent + 1);
+    findSolution(builds, build.shape1, indent + 1);
     if (build.shape2 != 0)
-      findSolution(build.shape2, indent + 1);
+      findSolution(builds, build.shape2, indent + 1);
   }
 
-  static void findSolution(int shape) {
+  static void findSolution(Map<Integer, Solver.Build> builds, int shape) {
     System.out.printf("Find solution for: %08x\n", shape);
-    findSolution(shape, 0);
+    findSolution(builds, shape, 0);
+  }
+
+  static void f1(int... values) {
+    switch (values.length) {
+    case 0:
+      System.out.println("No values!");
+      break;
+    case 1:
+      System.out.printf("%d\n", values[0]);
+      break;
+    case 2:
+      System.out.printf("%d %d\n", values[0], values[1]);
+      break;
+    default:
+      System.out.println("Unknown number of values");
+      break;
+    }
+  }
+
+  static void compFiles(String name1, String name2) {
+    Map<Integer, Solver.Build> b1 = ShapeFile.readDB(name1);
+    Map<Integer, Solver.Build> b2 = ShapeFile.readDB(name2);
+    Set<Integer> keys = b1.keySet();
+    int found = 0, cost1, cost2;
+    for (Integer key : keys) {
+      cost1 = b1.get(key).cost;
+      cost2 = b2.get(key).cost;
+      if (cost1 != cost2) {
+        System.out.printf("Found %08x %d %d\n", key, cost1, cost2);
+        found = key;
+      }
+    }
+    findSolution(b1, found);
+    findSolution(b2, found);
   }
 
 }

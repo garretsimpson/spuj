@@ -3,31 +3,26 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.IntBinaryOperator;
 import java.util.function.IntPredicate;
-import java.util.function.IntUnaryOperator;
 import java.util.stream.IntStream;
 
 /**
  * Solver
  */
 public class Solver {
-  private static final int MAX_ITERS = 100;
+  private static final int MAX_ITERS = 1000;
+  private static final int MAX_COST = 250;
   private static final int MAX_LAYERS = 3;
-  private static final int BATCH_SIZE = 100000;
+  private static final int BATCH_SIZE = 1000000;
 
   private static final int PRIM_COST = 1;
   private static boolean exit = false;
 
   final String RESULTS = "BigData/shapes.db";
 
-  private static final IntUnaryOperator[] ONE_OPS_ALL = { Ops::rotateRight, Ops::rotate180, Ops::rotateLeft,
-      Ops::cutLeft, Ops::cutRight, Ops::pinPush, Ops::crystal };
-  private static final IntBinaryOperator[] TWO_OPS_ALL = { Ops::swapLeft, Ops::swapRight, Ops::stack };
   private static final Ops.Name[] ONE_OPS = { Ops.Name.ROTATE_RIGHT, Ops.Name.ROTATE_180, Ops.Name.ROTATE_LEFT,
       Ops.Name.CUT_RIGHT, Ops.Name.CUT_LEFT, Ops.Name.PINPUSH, Ops.Name.CRYSTAL };
   private static final Ops.Name[] TWO_OPS = { Ops.Name.SWAP_RIGHT, Ops.Name.SWAP_LEFT, Ops.Name.STACK };
@@ -35,38 +30,36 @@ public class Solver {
   static class Build {
     byte op;
     int cost;
+    int shape; // result shape
     int shape1, shape2; // input shapes
 
-    Build(int op, int shape, int cost) {
+    Build(int op, int cost, int... shapes) {
       this.op = (byte) op;
-      this.shape1 = shape;
       this.cost = cost;
-    }
-
-    Build(int op, int shape1, int shape2, int cost) {
-      this.op = (byte) op;
-      this.shape1 = shape1;
-      this.shape2 = shape2;
-      this.cost = cost;
+      this.shape = shapes[0];
+      if (shapes.length > 1)
+        this.shape1 = shapes[1];
+      if (shapes.length > 2)
+        this.shape2 = shapes[2];
     }
   }
 
-  static String buildAsString(int shape, Build build) {
+  static String buildAsString(Build build) {
     String result;
     String opCode = Ops.nameByValue.get((int) build.op).code;
-
     if (build.shape2 == 0)
-      result = String.format("%3d %08x <- %s(%08x)", build.cost, shape, opCode, build.shape1);
+      result = String.format("%3d %08x <- %s(%08x)", build.cost, build.shape, opCode, build.shape1);
     else
-      result = String.format("%3d %08x <- %s(%08x, %08x)", build.cost, shape, opCode, build.shape1, build.shape2);
+      result = String.format("%3d %08x <- %s(%08x, %08x)", build.cost, build.shape, opCode, build.shape1, build.shape2);
     return result;
   }
 
   private Set<Integer> allShapes = new HashSet<>();
-  private Set<Integer> newShapes = Collections.synchronizedSet(new LinkedHashSet<>());
-  private Set<Integer> lowShapes = Collections.synchronizedSet(new LinkedHashSet<>());
+  private List<Set<Integer>> newShapes = new ArrayList<>(MAX_COST);
 
   private Map<Integer, Build> allBuilds = Collections.synchronizedMap(new HashMap<>());
+  private List<Build> oldBuilds = Collections.synchronizedList(new ArrayList<>());
+
   private static Map<Ops.Name, Integer> opCosts = new HashMap<>();
 
   static {
@@ -77,11 +70,17 @@ public class Solver {
     opCosts.put(Ops.Name.CUT_RIGHT, 1);
     opCosts.put(Ops.Name.CUT_LEFT, 1);
     opCosts.put(Ops.Name.PINPUSH, 1);
-    opCosts.put(Ops.Name.CRYSTAL, 2);
+    opCosts.put(Ops.Name.CRYSTAL, 2); // 2 because crystal uses paint
     opCosts.put(Ops.Name.SWAP_RIGHT, 1);
     opCosts.put(Ops.Name.SWAP_LEFT, 1);
     opCosts.put(Ops.Name.FAST_SWAP, 1);
-    opCosts.put(Ops.Name.STACK, 1);
+    opCosts.put(Ops.Name.STACK, 3); // 3 to compensate for cut before swap
+  }
+
+  Solver() {
+    for (int i = 0; i < MAX_COST; ++i) {
+      newShapes.add(Collections.synchronizedSet(new HashSet<Integer>()));
+    }
   }
 
   private IntStream shapeStream(Set<Integer> shapes) {
@@ -92,15 +91,21 @@ public class Solver {
     return Arrays.stream(shapes);
   }
 
-  Set<Integer> takeValues(Set<Integer> srcSet, int maxValues) {
-    Set<Integer> dstSet = new HashSet<>();
-    for (int v : srcSet) {
-      if (maxValues-- <= 0)
+  void takeValues(Set<Integer> dstSet, Set<Integer> srcSet, int maxValues) {
+    int numValues = maxValues - dstSet.size();
+    if (numValues <= 0)
+      return;
+    if (srcSet.size() <= numValues) {
+      dstSet.addAll(srcSet);
+      srcSet.clear();
+      return;
+    }
+    for (Integer v : srcSet) {
+      if (numValues-- == 0)
         break;
       dstSet.add(v);
     }
     srcSet.removeAll(dstSet);
-    return dstSet;
   }
 
   private boolean maxLayers(int shape) {
@@ -113,22 +118,30 @@ public class Solver {
     return Shape.isOneLayer(shape) && !Shape.hasCrystal(shape);
   }
 
+  private void debugBuild(String name, Build build) {
+    if (build == null)
+      return;
+    if (build.shape == 0x00cc00c1)
+      System.out.printf("%s: %s\n", name, buildAsString(build));
+  }
+
   private int doOp(Ops.Name opName, int shape) {
     int result = Ops.invoke(opName, shape);
     if ((result == shape) || !maxLayers(result))
       return 0;
-    Build oldBuild = allBuilds.get(result);
-    int cost = cost(opName, shape);
-    if (oldBuild == null) {
-      allBuilds.put(result, new Build(opName.value, shape, cost));
-    } else if (cost < oldBuild.cost) {
-      // System.out.printf("OLD: %s\n", buildAsString(result, oldBuild));
-      oldBuild.op = opName.value;
-      oldBuild.shape1 = shape;
-      oldBuild.shape2 = 0;
-      oldBuild.cost = cost;
-      // System.out.printf("NEW: %s\n", buildAsString(result, oldBuild));
-      lowShapes.add(result);
+    synchronized (allBuilds) {
+      Build oldBuild = allBuilds.get(result), newBuild = null;
+      int cost = cost(opName, shape);
+      if (oldBuild == null) {
+        newBuild = new Build(opName.value, cost, result, shape);
+        allBuilds.put(result, newBuild);
+      } else if (cost < oldBuild.cost) {
+        oldBuilds.add(oldBuild);
+        newBuild = new Build(opName.value, cost, result, shape);
+        allBuilds.put(result, newBuild);
+      }
+      debugBuild("OLD", oldBuild);
+      debugBuild("NEW", newBuild);
     }
     return result;
   }
@@ -137,18 +150,19 @@ public class Solver {
     int result = Ops.invoke(opName, shape1, shape2);
     if ((result == shape1) || (result == shape2) || !maxLayers(result))
       return 0;
-    Build oldBuild = allBuilds.get(result);
-    int cost = cost(opName, shape1, shape2);
-    if (oldBuild == null) {
-      allBuilds.put(result, new Build(opName.value, shape1, shape2, cost));
-    } else if (cost < oldBuild.cost) {
-      // System.out.printf("OLD: %s\n", buildAsString(result, oldBuild));
-      oldBuild.op = opName.value;
-      oldBuild.shape1 = shape1;
-      oldBuild.shape2 = shape2;
-      oldBuild.cost = cost;
-      // System.out.printf("NEW: %s\n", buildAsString(result, oldBuild));
-      lowShapes.add(result);
+    synchronized (allBuilds) {
+      Build oldBuild = allBuilds.get(result), newBuild = null;
+      int cost = cost(opName, shape1, shape2);
+      if (oldBuild == null) {
+        newBuild = new Build(opName.value, cost, result, shape1, shape2);
+        allBuilds.put(result, newBuild);
+      } else if (cost < oldBuild.cost) {
+        oldBuilds.add(oldBuild);
+        newBuild = new Build(opName.value, cost, result, shape1, shape2);
+        allBuilds.put(result, newBuild);
+      }
+      debugBuild("OLD", oldBuild);
+      debugBuild("NEW", newBuild);
     }
     return result;
   }
@@ -158,6 +172,10 @@ public class Solver {
   }
 
   private int cost(Ops.Name opName, int shape1, int shape2) {
+    return opCosts.get(opName) + allBuilds.get(shape1).cost + allBuilds.get(shape2).cost;
+  }
+
+  private int cost2(Ops.Name opName, int shape1, int shape2) {
     Build build1 = allBuilds.get(shape1);
     Build build2 = allBuilds.get(shape2);
     int cost = opCosts.get(opName) + build1.cost + build2.cost;
@@ -173,6 +191,17 @@ public class Solver {
     return cost;
   }
 
+  private String sizeString() {
+    StringBuilder sb = new StringBuilder();
+    int size;
+    for (int i = 0; i < newShapes.size(); ++i) {
+      size = newShapes.get(i).size();
+      if (size > 0)
+        sb.append(String.format("%d: %d\n", i, size));
+    }
+    return sb.toString();
+  }
+
   void run() {
     // int[] shapes = Arrays.stream(Shape.FLAT_4).toArray();
     int[] shapes = Arrays.stream(new int[][] { Shape.FLAT_4, Shape.PIN_4 }).flatMapToInt(Arrays::stream).toArray();
@@ -183,31 +212,30 @@ public class Solver {
     System.out.println("Input shapes");
     Tools.displayShapes(shapes);
 
-    Arrays.stream(shapes).forEach(newShapes::add);
-    Arrays.stream(shapes).forEach(shape -> allBuilds.put(shape, new Build(Ops.Name.NOP.value, shape, PRIM_COST)));
-    // ShapeFile.delete(RESULTS);
+    Arrays.stream(shapes).forEach(shape -> newShapes.get(PRIM_COST).add(shape));
+    Arrays.stream(shapes).forEach(shape -> allBuilds.put(shape, new Build(Ops.Name.NOP.value, PRIM_COST, shape)));
 
     Set<Integer> inputShapes;
-    for (int i = 1; i <= MAX_ITERS; ++i) {
-      System.out.printf("ITER #%d\n", i);
-      inputShapes = takeValues(newShapes, BATCH_SIZE);
-      /* TODO: Insert inputBuilds into allBuilds before calling makeShapes() */
-      lowShapes.clear();
+    for (int cost = PRIM_COST; cost < MAX_COST; ++cost) {
+      // for (int i = 0; i < MAX_ITERS; ++i) {
+      if (cost > MAX_ITERS)
+        break;
+      // takeValues(inputShapes, newShapes, BATCH_SIZE);
+      inputShapes = newShapes.get(cost);
+      if (inputShapes.size() == 0)
+        continue;
+      // System.out.printf("ITER %d\n", i);
+      System.out.printf("COST %d\n", cost);
+      /* TODO: Insert inputShapes into allShapes before calling makeShapes() */
       makeShapes(inputShapes);
       allShapes.addAll(inputShapes);
-      // ShapeFile.append(RESULTS, inputShapes);
+      inputShapes.clear();
 
-      newShapes.addAll(lowShapes);
-      System.out.printf("LOW %d\n", lowShapes.size());
-      if (newShapes.size() > 0) {
-        System.out.printf("TODO %d\n\n", newShapes.size());
-      } else {
-        System.out.printf("DONE\n\n");
-        break;
-      }
+      System.out.println("\nTODO");
+      System.out.println(sizeString());
     }
-    // if (newShapes.size() > 0)
-    // ShapeFile.append(RESULTS, newShapes);
+    System.out.printf("DONE\n\n");
+    debugBuild("DEBUG", allBuilds.get(0x00cc00c1));
   }
 
   /**
@@ -219,6 +247,8 @@ public class Solver {
     int inputLen = inputShapes.size();
     List<IntStream> streams = new ArrayList<>();
     IntStream stream;
+    Set<Integer> shapes = Collections.synchronizedSet(new HashSet<Integer>());
+    oldBuilds.clear();
 
     System.out.printf("ONE_OPS %d %d > %d\n", ONE_OPS.length, inputLen, 1l * ONE_OPS.length * inputLen);
     for (Ops.Name opName : ONE_OPS) {
@@ -238,7 +268,15 @@ public class Solver {
     stream = stream.filter(shape -> !allShapes.contains(shape));
     stream = stream.filter(shape -> !inputShapes.contains(shape));
     // stream = stream.filter(shape -> !newShapes.contains(shape));
-    stream.forEach(shape -> newShapes.add(shape));
+    // stream = stream.distinct();
+    stream.forEach(shapes::add);
+
+    // remove old duplicate shapes
+    System.out.printf("OLD: %s\n", oldBuilds.size());
+    oldBuilds.stream().forEach(build -> newShapes.get(build.cost).remove(build.shape));
+
+    // Insert new new shapes
+    shapes.stream().forEach(shape -> newShapes.get(allBuilds.get(shape).cost).add(shape));
   }
 
   /* This "completes the square" by doing all operations that have not been done before. */
@@ -265,14 +303,15 @@ public class Solver {
     System.out.printf("size: %d\n", allBuilds.size());
     ShapeFile.writeDB(RESULTS, allBuilds);
     int maxCost = allBuilds.values().stream().mapToInt(v -> v.cost).max().getAsInt();
-    System.out.printf("max cost: %d (%x)", maxCost, maxCost);
-
+    int totalCost = allBuilds.values().stream().mapToInt(v -> v.cost).sum();
+    System.out.printf("max cost: %d (%x)\n", maxCost, maxCost);
+    System.out.printf("total cost: %d\n", totalCost);
   }
 
   void shutdown() {
     exit = true;
-    if (newShapes.size() > 0)
-      ShapeFile.append(RESULTS, newShapes);
+    // if (newShapes.size() > 0)
+    // ShapeFile.append(RESULTS, newShapes);
   }
 
 }

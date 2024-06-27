@@ -88,7 +88,7 @@ public class ShapeFile {
         shape1 = scan.nextInt();
         shape2 = scan.nextInt();
         cost = scan.nextInt();
-        dataMap.put(shape, new Solver.Build(Ops.nameByCode.get(opCode).value, shape1, shape2, cost));
+        dataMap.put(shape, new Solver.Build(Ops.nameByCode.get(opCode).value, cost, shape, shape1, shape2));
       }
     } catch (Exception e) {
       System.err.printf("Error reading file: %s\n", name);

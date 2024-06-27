@@ -70,40 +70,32 @@ class Ops {
   // return nameValues.get(code).intValue();
   // }
 
-  static int invoke(Name opName, int shape) {
+  static int invoke(Name opName, int... shapes) {
     switch (opName) {
     case NOP:
-      return nop(shape);
+      return nop(shapes[0]);
     case ROTATE_RIGHT:
-      return rotateRight(shape);
+      return rotateRight(shapes[0]);
     case ROTATE_180:
-      return rotate180(shape);
+      return rotate180(shapes[0]);
     case ROTATE_LEFT:
-      return rotateLeft(shape);
+      return rotateLeft(shapes[0]);
     case CUT_RIGHT:
-      return cutRight(shape);
+      return cutRight(shapes[0]);
     case CUT_LEFT:
-      return cutLeft(shape);
+      return cutLeft(shapes[0]);
     case PINPUSH:
-      return pinPush(shape);
+      return pinPush(shapes[0]);
     case CRYSTAL:
-      return crystal(shape);
-    default:
-      System.err.println("Unkown op name: " + opName.name());
-      return 0;
-    }
-  }
-
-  static int invoke(Name opName, int shape1, int shape2) {
-    switch (opName) {
+      return crystal(shapes[0]);
     case SWAP_RIGHT:
-      return swapRight(shape1, shape2);
+      return swapRight(shapes[0], shapes[1]);
     case SWAP_LEFT:
-      return swapLeft(shape1, shape2);
+      return swapLeft(shapes[0], shapes[1]);
     case FAST_SWAP:
-      return fastSwap(shape1, shape2);
+      return fastSwap(shapes[0], shapes[1]);
     case STACK:
-      return stack(shape1, shape2);
+      return stack(shapes[0], shapes[1]);
     default:
       System.err.println("Unkown op name: " + opName.name());
       return 0;

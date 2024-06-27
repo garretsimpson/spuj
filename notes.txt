@@ -1469,7 +1469,7 @@ TODO
 - Use a tiered todo list?  But I'm not sure if that is needed or not.
 - How to make the results determinate / the same every time?
 - currently, I'm not sure the cost is always correct.
-  - finding a lower cost solution replaces a shape.
+  - finding a lower cost solution replaces a shape build.
   - if the replaced shape was used before, then the derived shapes are not updated.
   - if the replaced shape was not used before, then it might have been skipped as a higher cost solution.
   - maybe the only way to have accurate cost is to actually build a solution tree.
@@ -1607,3 +1607,512 @@ Time: 58066
 cut: 9515778, swap: 8270798, stack: 381147348, rotate: 14273667, pinPush 4757889, crystal 4757889, collapse: 14273667
 
 About 60 seconds to find low cost solutions to 3,865,587 shapes with less than 4-layers.
+The constructor takes about 15 seconds, so this is 4 times as long.
+
+TODO
+- Compare results with and without adding lower cost shapes back to the todo list.
+- There might be a way to minimize the number of lower cost shapes.
+  - tiered todo?
+  - check them before the remaining todo list?
+  - other?
+
+With lower cost shapes first...
+
+ITER #85
+INPUT 8
+ONE_OPS 7 8 > 56
+TWO_OPS 3 8 3865587 > 185548368
+DONE
+
+Time: 110971
+cut: 15311898, swap: 18509862, stack: 612992364, rotate: 22967847, pinPush 7655949, crystal 7655949, collapse: 22967847
+
+Solver results
+size: 3865587
+Writing file: BigData/shapes.db
+max cost: 70 (46)
+total cost: 120,383,876
+
+With lower cost shapes last...
+
+ITER #55
+INPUT 192
+ONE_OPS 7 192 > 1344
+TWO_OPS 3 192 3865587 > 4453266816
+DONE
+
+Time: 60629
+Time: 64822
+cut: 9428296, swap: 8133574, stack: 377648356, rotate: 14142444, pinPush 4714148, crystal 4714148, collapse: 14142444
+cut: 10044556, swap: 8801496, stack: 402298768, rotate: 15066834, pinPush 5022278, crystal 5022278, collapse: 15066834
+
+Solver results
+size: 3865587
+Writing file: BigData/shapes.db
+max cost: 70 (46)
+total cost: 120,118,857
+total cost: 120,288,153
+total cost: 120,937,977
+
+Hmm - it finds different solutions each time.  Need to figure out how to find all solutions.
+Adding the lower cost to the end makes it run faster, and a little bit cheaper maybe?  nope, it varies.
+Don't know why, and don't know if there is a better method to find low cost solutions.
+My feeling is that lower cost shapes need to be reused with all shapes, or we need to build a tree.
+Maybe multiple passes over the entire solution set?
+
+Without lower cost shapes...
+
+Time: 46718
+cut: 7731174, swap: 6444050, stack: 309246960, rotate: 11596761, pinPush 3865587, crystal 3865587, collapse: 11596761
+
+Solver results
+size: 3865587
+Writing file: BigData/shapes.db
+max cost: 70 (46)
+total cost: 120,605,918
+total cost: 120,951,147
+total cost: 122,304,324
+
+Okay, I really don't understand now.  It found a smaller total cost, without resusing the lower cost shapes.
+
+cut is 2 * total
+swap is 2 * 1795^2
+stack is 80 * total
+
+Try sorting the todo list by cost...
+
+Solver results
+size: 3865587
+Writing file: BigData/shapes.db
+max cost: 70 (46)
+total cost: 121,205,336
+
+And the cost is more.  How does that work?
+Maybe the sorted data is not is staying sorted.  Or the costs are wrong.
+I am using synchronized LinkedHashSet objects.  They are supposed to stay ordered.
+Don't know for sure that an addAll(x) will keep the order from x.
+
+Try without the batch limit...
+00010014,SW,00010010,00000004,08
+00010014,SW,00010010,00000004,09
+
+  8 00010014 <- SW(00010010, 00000004)
+  5   00010010 <- CR(00090090)
+  4     00090090 <- PP(00000009)
+  3       00000009 <- RL(00000003)
+  2         00000003 <- CR(0000000f)
+  1           0000000f <--
+  4   00000004 <- CL(00000006)
+  3     00000006 <- RL(0000000c)
+  2       0000000c <- CL(0000000f)
+  1         0000000f <--
+
+  9 00010014 <- SW(00010010, 00000004)
+  5   00010010 <- PP(00000001)
+  4     00000001 <- CR(00000009)
+  3       00000009 <- RL(00000003)
+  2         00000003 <- CR(0000000f)
+  1           0000000f <--
+  4   00000004 <- CL(00000006)
+  3     00000006 <- RR(00000003)
+  2       00000003 <- CR(0000000f)
+  1         0000000f <--
+
+The costs are correct.
+Swap can reduce the cost by 1 or 2.
+There are 10 nodes (builds) in each case...
+In case1, there is a PP then CR.  Swap -2 = 8
+In case2, there is a CR then PP.  Swap -1 = 9
+Shape 00010010 can be made either way.  pin on solid.
+
+  5   00010010 <- CR(00090090)
+  4     00090090 <- PP(00000009)
+
+  5   00010010 <- PP(00000001)
+  4     00000001 <- CR(00000009)
+
+The cost of this shape is the same in both cases, so the low cost function did not replace it.
+Whichever is found first wins.
+Maybe it should have a preference?
+Or maybe swap should not subtract costs?
+Make stack more expensive to compensate?
+
+Try with no Swap discount...
+
+0003001c,SW,0000000c,00030010,0b
+0003001c,SW,00030010,0000000c,0a
+
+These are swaps with the inputs swapped.  But they have different costs?
+
+ 11 0003001c <- SW(0000000c, 00030010)
+  2   0000000c <- CL(0000000f)
+  1     0000000f <--
+  7   00030010 <- CR(006f00f0)
+  6     006f00f0 <- RR(003f00f0)
+  5       003f00f0 <- PP(0003000f)
+  4         0003000f <- XX(0000000c)
+  2           0000000c <- CL(0000000f)
+  1             0000000f <--
+
+ 10 0003001c <- SW(00030010, 0000000c)
+  7   00030010 <- CR(006f00f0)
+  6     006f00f0 <- PP(0006000f)
+  5       0006000f <- XX(00000009)
+  3         00000009 <- RL(00000003)
+  2           00000003 <- CR(0000000f)
+  1             0000000f <--
+  2   0000000c <- CL(0000000f)
+  1     0000000f <--
+
+- Crystal costs 2
+- In the first case, the cost seems to be wrong.
+- Both input shapes have the same costs in both cases (2 and 7).
+- Even though one shape is made differently, it has the same cost.
+- The final swap should be 2+7+1 = 10.
+- The 00030010 shape must have been more expensive (8) at the point the target shape was made.
+- How?
+- It could happen if both the target shape and a lower cost input shape was found in the same iteration.
+- Only if - the lower cost was found after the target shape.
+- Fix?
+- While finding new shapes, they could/should only use old shape builds.
+- That would prevent this from happening.
+- But then what if a lower cost of an input/existing shape is found?
+- That should not happen.  Why?
+- How did it find a lower cost build of an existing shape in a later iter?
+
+Iter 4
+...
+ 12 0003001c <- ST(00000001, 0003000c)
+  8 00030010 <- CR(000f0090)
+
+- both found the first time in iter 4.
+- but the target does not use the input shape.
+
+Iter 5
+ 11 0003001c <- SW(00030010, 0000000c)
+  7 00030010 <- CR(006f00f0)
+...
+- Early in iter 5, a lower cost target shape is found, with the input shape.
+- And then a lower cost is found for the input shape.
+- So both are lowered in the same iter, but the target/derived shape uses the old, more expensive, input shape build.
+- Now if the target shape is used as input in another shape, then that new shape will have the wrong cost.
+- But the cost of the target is wrongly higher than it should be.
+- If it was the correct lower value, then maybe it would have replaced a build for the new shape.
+- And now the new shape might have a different higher cost build than it should have because it was not replaced.
+
+Note: running with sequential streams, the cost results are always the same.
+
+Solver results
+size: 35280
+Writing file: BigData/shapes.db
+max cost: 71 (47)
+total cost: 1033491
+
+Also, looks like the same Op was invoked twice...
+  9 00030010 <- ST(00000001, 00030000)
+  9 00030010 <- ST(00000001, 00030000)
+Same top and bottom shapes.  How?
+
+It's not, the inputs are different each time...
+  8 00030010 <- CR(000f0090)
+  9 00030010 <- CR(00030090)
+ 12 00030010 <- CR(0003009c)
+  9 00030010 <- ST(00000001, 00030000)
+ 12 0003001c <- ST(00000001, 0003000c)
+
+Possible tiered solution...
+
+In iter 1, all input shapes have cost 1 (because they are primitives).
+The new shapes found have cost > 1, but might be 2, 3, 4, 5, etc.
+After iter 1, the input shapes become old shapes.
+All the builds are stored together.
+
+In iter 2, the input shapes are new shapes with cost 2.
+The new shapes have cost > 2, but might be 3, 4, 5, 6, etc.
+Need to try all combos, except each (old, old).
+
+Will this have the problem found?  Where lower cost existing shapes are found?
+Cost is computed using the sum of the cost of the input shapes.
+In iter 2, the input shapes all have cost of 2.  Resulting shapes are > 2.
+Might replace an existing build since those might have larger cost values.
+
+TODO
+- Don't store duplicate new shapes. Just store the lowest cost one.
+- I don't think this is a problem, since cost is from allBuilds, and it stores only the lowest cost.
+- Can the new shape filters (for allShapes and inputShapes) be removed?  Are these all new shapes?
+- No. If they are not filtered out, then the old shapes get re-inserted into the newShapes list.
+- use distict() to avoid inserting the same shape more than once into the new shapes list.
+- This causes a concurrent modification exception, why?
+
+Implemented tiered todo shapes by cost.
+
+Ran 2-layers...
+
+Time: 1247
+cut: 108208, swap: 119336, stack: 4338168, rotate: 162312, pinPush 54104, crystal 54104, collapse: 162312
+
+Solver results
+size: 35280
+Writing file: BigData/shapes.db
+max cost: 71 (47)
+total cost: 1011995
+
+Why are the stats different?  Higher.
+
+was: (with multi-layer top)
+cut: 70560, swap: 64800, stack: 113742720, rotate: 105840, pinPush 35280, crystal 35280, collapse: 105840
+
+Doing more work somewhere?
+Maybe finding lower cost builds, so there's more than one of the same shape?
+Should delete older new shape when newer lower cost one is found.
+Yep! that was it...
+
+cut: 70560, swap: 64800, stack: 2822400, rotate: 105840, pinPush 35280, crystal 35280, collapse: 105840
+
+Ran 3-layers...
+
+DONE
+
+Time: 161356
+cut: 7729602, swap: 6444050, stack: 309184080, rotate: 11594403, pinPush 3864801, crystal 3864801, collapse: 11594403
+
+Solver results
+size: 3865435
+Writing file: BigData/shapes.db
+max cost: 111 (6f)
+total cost: 183621458
+
+It didn't finish.
+But it is much slower, and the cost much higher.
+Still running sequential streams.  Maybe that's why it is slower.
+But why is the cost more?
+
+was 70 max cost and 120M total cost
+
+Ran 3-layers to completion...
+
+Time: 185891
+cut: 7731174, swap: 6444050, stack: 309246960, rotate: 11596761, pinPush 3865587, crystal 3865587, collapse: 11596761
+
+Solver results
+size: 3865587
+Writing file: BigData/shapes.db
+max cost: 112 (70)
+total cost: 183637114
+
+file shapes3_4.db
+
+000000ff,ST,0000000f,0000000f,05
+0f330f3f,RR,0f990f9f,00000000,70
+
+Looks like this is using stack cost = 3, where the old database was cost = 1.
+
+000000ff,ST,0000000f,0000000f,05
+000000ff,ST,0000000f,0000000f,03
+
+This probably explains the higher max and total cost values.
+This will cause the data to be "spread-out" more, fewer shapes in more buckets.
+
+With parallel streams...
+
+Time: 81062
+cut: 7731180, swap: 6444050, stack: 309247196, rotate: 11596770, pinPush 3865590, crystal 3865590, collapse: 11596770
+
+Solver results
+size: 3865587
+Writing file: BigData/shapes.db
+max cost: 112 (70)
+total cost: 183637114
+
+cost is the same!
+and it's faster, 81 seconds vs 186 seconds.
+was under 60 seconds with previous method. but that had bad costs that may have caused non-minimum solutions.
+I'm pretty sure this tiered todo list method finds minimum cost solutions.
+
+Time: 79562
+cut: 7731178, swap: 6444050, stack: 309247120, rotate: 11596767, pinPush 3865589, crystal 3865589, collapse: 11596767
+
+Solver results
+size: 3865587
+Writing file: BigData/shapes.db
+max cost: 112 (70)
+total cost: 183637116
+
+Oops, cost not the same (off by only a few).
+The stats are also off by a few.  Why?
+The stats should be exact, but look a few over.
+
+Ran 1-layer a few times...
+
+COST 7
+ONE_OPS 7 20 > 140
+TWO_OPS 3 20 35 > 5400
+Exception in thread "main" java.lang.IndexOutOfBoundsException
+        at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+        at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:77)
+        at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+        at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:499)
+        at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:480)
+        at java.base/java.util.concurrent.ForkJoinTask.getThrowableException(ForkJoinTask.java:564)
+        at java.base/java.util.concurrent.ForkJoinTask.reportException(ForkJoinTask.java:591)
+        at java.base/java.util.concurrent.ForkJoinTask.invoke(ForkJoinTask.java:689)
+        at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateParallel(ForEachOps.java:159)
+        at java.base/java.util.stream.ForEachOps$ForEachOp$OfInt.evaluateParallel(ForEachOps.java:188)
+        at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:233)
+        at java.base/java.util.stream.IntPipeline.forEach(IntPipeline.java:463)
+        at Solver.makeShapes(Solver.java:246)
+        at Solver.run(Solver.java:206)
+        at Main.makeShapes(Main.java:34)
+        at Main.main(Main.java:19)
+Caused by: java.lang.IndexOutOfBoundsException: Index 17 out of bounds for length 16
+        at java.base/jdk.internal.util.Preconditions.outOfBounds(Preconditions.java:64)
+        at java.base/jdk.internal.util.Preconditions.outOfBoundsCheckIndex(Preconditions.java:70)
+        at java.base/jdk.internal.util.Preconditions.checkIndex(Preconditions.java:266)
+        at java.base/java.util.Objects.checkIndex(Objects.java:361)
+        at java.base/java.util.ArrayList.get(ArrayList.java:427)
+        at TSet.get(TSet.java:12)
+        at Solver.doOp(Solver.java:148)
+        at Solver.lambda$18(Solver.java:264)
+        at java.base/java.util.stream.IntPipeline$8$1.accept(IntPipeline.java:358)
+        at java.base/java.util.Spliterators$IntArraySpliterator.forEachRemaining(Spliterators.java:1076)
+        at java.base/java.util.Spliterator$OfInt.forEachRemaining(Spliterator.java:711)
+        at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+        at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+        at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:150)
+        at java.base/java.util.stream.ForEachOps$ForEachOp$OfInt.evaluateSequential(ForEachOps.java:188)
+        at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+        at java.base/java.util.stream.IntPipeline.forEach(IntPipeline.java:463)
+        at java.base/java.util.stream.ReferencePipeline$8$1.accept(ReferencePipeline.java:324)
+        at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1625)
+        at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+        at java.base/java.util.stream.ForEachOps$ForEachTask.compute(ForEachOps.java:290)
+        at java.base/java.util.concurrent.CountedCompleter.exec(CountedCompleter.java:754)
+        at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+        at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+        at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+        at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+        at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+Shutdown
+
+Got different results each time.
+There's something wrong with my TSet class.  probably not concurrent safe somewhere.
+When I use sequential streams, the stat values look good.
+How do I make it safe?
+
+Reverted back to Set<Integer> for todo list...
+
+Time: 48
+cut: 510, swap: 450, stack: 20400, rotate: 765, pinPush 255, crystal 255, collapse: 765
+Time: 498
+cut: 70560, swap: 64800, stack: 2822400, rotate: 105840, pinPush 35280, crystal 35280, collapse: 105840
+Time: 48116
+cut: 7731174, swap: 6444050, stack: 309246960, rotate: 11596761, pinPush 3865587, crystal 3865587, collapse: 11596761
+
+safe, correct, and much faster
+
+max cost: 112 (70)
+total cost: 184,634,785
+max cost: 112 (70)
+total cost: 185,378,825
+
+But the costs are inaccurate.  It's probably good enough.
+
+Implement new tiered todo...
+
+Time: 731
+cut: 70560, swap: 64800, stack: 2822400, rotate: 105840, pinPush 35280, crystal 35280, collapse: 105840
+
+Solver results
+size: 35280
+Writing file: BigData/shapes.db
+max cost: 71 (47)
+total cost: 1011995
+total cost: 1011996
+
+Sometimes the total cost is off by one.
+
+Found 00cc00c1 11 12
+Find solution for: 00cc00c1
+ 11 00cc00c1 <- SW(00000001, 00cc00c0)
+  4   00000001 <- CR(00000009)
+  3     00000009 <- RL(00000003)
+  2       00000003 <- CR(0000000f)
+  1         0000000f <--
+  6   00cc00c0 <- PP(000c000c)
+  5     000c000c <- CL(000c000f)
+  4       000c000f <- XX(00000003)
+  2         00000003 <- CR(0000000f)
+  1           0000000f <--
+
+Find solution for: 00cc00c1
+ 12 00cc00c1 <- RU(00330034)
+ 11   00330034 <- SW(00330030, 00000004)
+  6     00330030 <- PP(00030003)
+  5       00030003 <- CR(0003000f)
+  4         0003000f <- XX(0000000c)
+  2           0000000c <- CL(0000000f)
+  1             0000000f <--
+  4     00000004 <- CL(00000006)
+  3       00000006 <- RR(00000003)
+  2         00000003 <- CR(0000000f)
+  1           0000000f <--
+
+There is only one RU, and it's in only one of the db files:
+00cc00c1,RU,00330034,00000000,0c
+
+The second file has:
+00000001,CR,00000009,00000000,04
+00cc00c0,PP,000c000c,00000000,06
+
+so why did it not find this?
+11 00cc00c1 <- SW(00000001, 00cc00c0)
+
+or if it did, why did it skip it?
+
+COST 6
+ONE_OPS 7 38 > 266
+TWO_OPS 3 38 54 > 16644
+NEW:  11 00cc00c1 <- SW(00cc00c0, 00000001)
+NEW:  13 00cc00c1 <- ST(00000001, 00cc00c0)
+NEW:  11 00cc00c1 <- SW(00000001, 00cc00c0)
+OLD: 22
+
+COST 11
+ONE_OPS 7 347 > 2429
+TWO_OPS 3 347 648 > 1710363
+OLD:  13 00cc00c1 <- ST(00000001, 00cc00c0)
+NEW:  12 00cc00c1 <- RU(00330034)
+OLD: 690
+
+DEBUG:  12 00cc00c1 <- RU(00330034)
+
+Looks like it got 3 new builds all at the same time.
+Somehow the 13 won, and then was replaced later with a 12.
+
+I added a sync block around allBuilds.get() and allBuilds.put().
+2-layer...
+total cost: 1011995
+3-layer...
+Time: 83639
+cut: 7731174, swap: 6444050, stack: 309246960, rotate: 11596761, pinPush 3865587, crystal 3865587, collapse: 11596761
+
+Solver results
+size: 3865587
+Writing file: BigData/shapes.db
+max cost: 112 (70)
+total cost: 183637114
+
+Time: 86170
+cut: 7731174, swap: 6444050, stack: 309246960, rotate: 11596761, pinPush 3865587, crystal 3865587, collapse: 11596761
+
+Solver results
+size: 3865587
+Writing file: BigData/shapes.db
+max cost: 112 (70)
+total cost: 183637114
+
+Yeah! all the stats and costs are now the same each run.
+It just takes twice as long as without the tiered todo.
+
+TODO
+- Add batch processing back.
