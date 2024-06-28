@@ -14,9 +14,9 @@ import java.util.stream.IntStream;
  */
 public class Solver {
   private static final int MAX_ITERS = 1000;
-  private static final int MAX_COST = 250;
+  private static final int MAX_COST = 1000;
   private static final int MAX_LAYERS = 3;
-  private static final int BATCH_SIZE = 1000000;
+  private static final int BATCH_SIZE = 10000;
 
   private static final int PRIM_COST = 1;
   private static boolean exit = false;
@@ -121,8 +121,8 @@ public class Solver {
   private void debugBuild(String name, Build build) {
     if (build == null)
       return;
-    if (build.shape == 0x00cc00c1)
-      System.out.printf("%s: %s\n", name, buildAsString(build));
+    // if (build.shape == 0x00cc00c1)
+    System.out.printf("%s: %s\n", name, buildAsString(build));
   }
 
   private int doOp(Ops.Name opName, int shape) {
@@ -140,14 +140,15 @@ public class Solver {
         newBuild = new Build(opName.value, cost, result, shape);
         allBuilds.put(result, newBuild);
       }
-      debugBuild("OLD", oldBuild);
-      debugBuild("NEW", newBuild);
+      // debugBuild("OLD", oldBuild);
+      // debugBuild("NEW", newBuild);
     }
     return result;
   }
 
   private int doOp(Ops.Name opName, int shape1, int shape2) {
     int result = Ops.invoke(opName, shape1, shape2);
+    // debugBuild("INP", new Build(opName.value, 0, result, shape1, shape2));
     if ((result == shape1) || (result == shape2) || !maxLayers(result))
       return 0;
     synchronized (allBuilds) {
@@ -161,8 +162,8 @@ public class Solver {
         newBuild = new Build(opName.value, cost, result, shape1, shape2);
         allBuilds.put(result, newBuild);
       }
-      debugBuild("OLD", oldBuild);
-      debugBuild("NEW", newBuild);
+      // debugBuild("OLD", oldBuild);
+      // debugBuild("NEW", newBuild);
     }
     return result;
   }
@@ -191,13 +192,13 @@ public class Solver {
     return cost;
   }
 
-  private String sizeString() {
+  private String todoString() {
     StringBuilder sb = new StringBuilder();
     int size;
     for (int i = 0; i < newShapes.size(); ++i) {
       size = newShapes.get(i).size();
       if (size > 0)
-        sb.append(String.format("%d: %d\n", i, size));
+        sb.append(String.format("%4d: %,8d\n", i, size));
     }
     return sb.toString();
   }
@@ -215,27 +216,27 @@ public class Solver {
     Arrays.stream(shapes).forEach(shape -> newShapes.get(PRIM_COST).add(shape));
     Arrays.stream(shapes).forEach(shape -> allBuilds.put(shape, new Build(Ops.Name.NOP.value, PRIM_COST, shape)));
 
-    Set<Integer> inputShapes;
+    Set<Integer> newShapes, inputShapes = new HashSet<>();
     for (int cost = PRIM_COST; cost < MAX_COST; ++cost) {
-      // for (int i = 0; i < MAX_ITERS; ++i) {
       if (cost > MAX_ITERS)
         break;
-      // takeValues(inputShapes, newShapes, BATCH_SIZE);
-      inputShapes = newShapes.get(cost);
-      if (inputShapes.size() == 0)
-        continue;
-      // System.out.printf("ITER %d\n", i);
-      System.out.printf("COST %d\n", cost);
-      /* TODO: Insert inputShapes into allShapes before calling makeShapes() */
-      makeShapes(inputShapes);
-      allShapes.addAll(inputShapes);
-      inputShapes.clear();
-
-      System.out.println("\nTODO");
-      System.out.println(sizeString());
+      newShapes = this.newShapes.get(cost);
+      if (newShapes.size() > 0) {
+        System.out.println("TODO");
+        System.out.println(todoString());
+        System.out.printf("COST    %,20d\n", cost);
+      }
+      while (newShapes.size() > 0) {
+        takeValues(inputShapes, newShapes, BATCH_SIZE);
+        System.out.printf("SIZE    %,20d\n", inputShapes.size());
+        System.out.printf("TOTAL   %,20d\n", allShapes.size());
+        makeShapes(inputShapes);
+        allShapes.addAll(inputShapes);
+        inputShapes.clear();
+        System.out.println();
+      }
     }
     System.out.printf("DONE\n\n");
-    debugBuild("DEBUG", allBuilds.get(0x00cc00c1));
   }
 
   /**
@@ -244,39 +245,39 @@ public class Solver {
    * Given a list of starting shapes, find the shapes that can be made by performing all operations.
    */
   void makeShapes(Set<Integer> inputShapes) {
-    int inputLen = inputShapes.size();
-    List<IntStream> streams = new ArrayList<>();
-    IntStream stream;
     Set<Integer> shapes = Collections.synchronizedSet(new HashSet<Integer>());
+    List<IntStream> streams = new ArrayList<>();
+    int inputLen = inputShapes.size();
+
     oldBuilds.clear();
 
-    System.out.printf("ONE_OPS %d %d > %d\n", ONE_OPS.length, inputLen, 1l * ONE_OPS.length * inputLen);
+    System.out.printf("ONE_OPS %,20d\n", 1l * ONE_OPS.length * inputLen);
     for (Ops.Name opName : ONE_OPS) {
       streams.add(shapeStream(inputShapes).map(shape -> doOp(opName, shape)));
     }
 
-    System.out.printf("TWO_OPS %d %d %d > %d\n", TWO_OPS.length, inputLen, allShapes.size(),
+    System.out.printf("TWO_OPS %,20d\n",
         1l * TWO_OPS.length * ((1l * inputLen * inputLen) + (2l * inputLen * allShapes.size())));
     makeStreams(streams, inputShapes, Ops.Name.FAST_SWAP, x -> Shape.isLeftHalf(x), x -> Shape.isRightHalf(x));
     makeStreams(streams, inputShapes, Ops.Name.FAST_SWAP, x -> Shape.isRightHalf(x), x -> Shape.isLeftHalf(x));
     // makeStreams(streams, inputShapes, Ops.Name.STACK, x -> !Shape.hasCrystal(x), x -> true);
     makeStreams(streams, inputShapes, Ops.Name.STACK, x -> this.oneLayerNoCrystal(x), x -> true);
 
+    IntStream stream;
     stream = streams.parallelStream().flatMapToInt(s -> s);
-    // stream = stream.filter(shape -> this.maxLayers(shape));
     stream = stream.filter(shape -> shape != 0);
     stream = stream.filter(shape -> !allShapes.contains(shape));
     stream = stream.filter(shape -> !inputShapes.contains(shape));
-    // stream = stream.filter(shape -> !newShapes.contains(shape));
-    // stream = stream.distinct();
     stream.forEach(shapes::add);
 
-    // remove old duplicate shapes
-    System.out.printf("OLD: %s\n", oldBuilds.size());
+    // Remove old duplicate shapes
     oldBuilds.stream().forEach(build -> newShapes.get(build.cost).remove(build.shape));
 
     // Insert new new shapes
     shapes.stream().forEach(shape -> newShapes.get(allBuilds.get(shape).cost).add(shape));
+
+    System.out.printf("BUILDS  %,20d\n", allBuilds.size());
+    System.out.printf("DUPS    %,20d\n", oldBuilds.size());
   }
 
   /* This "completes the square" by doing all operations that have not been done before. */
@@ -310,8 +311,7 @@ public class Solver {
 
   void shutdown() {
     exit = true;
-    // if (newShapes.size() > 0)
-    // ShapeFile.append(RESULTS, newShapes);
+    ShapeFile.writeDB(RESULTS, allBuilds);
   }
 
 }

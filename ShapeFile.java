@@ -3,6 +3,7 @@ import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -64,13 +65,16 @@ public class ShapeFile {
     System.out.printf("Writing file: %s\n", name);
     try (FileWriter file = new FileWriter(name, append)) {
       PrintWriter out = new PrintWriter(file);
-      data.keySet().stream().sorted().forEach(shape -> {
+      Integer[] shapes = data.keySet().toArray(Integer[]::new);
+      Arrays.sort(shapes);
+      for (Integer shape : shapes) {
         Solver.Build build = data.get(shape);
         out.printf("%08x,%s,%08x,%08x,%02x\n", shape, Ops.nameByValue.get((int) build.op).code, build.shape1,
             build.shape2, build.cost);
-      });
+      }
     } catch (Exception e) {
       System.err.printf("Error writing file: %s\n", name);
+      e.printStackTrace();
     }
   }
 

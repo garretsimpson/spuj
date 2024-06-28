@@ -2115,4 +2115,37 @@ Yeah! all the stats and costs are now the same each run.
 It just takes twice as long as without the tiered todo.
 
 TODO
+- Confirm todo shapes are correct after COST 1 iter.
+  - There are only 2 cost 5 shapes found?  Should be 4 I think.
+  - doOp(x,y) is called 4 times, but 2 results are already known (pins under) with lower cost.
+  - It finds old builds with lower costs, so they are not replaced / added.
 - Add batch processing back.
+- Incremental saves.
+- Save all builds on shutdown.
+- Optimizations
+  - Reduce memory size to avoid swapping to disk.
+  - Does Build need the result shape?
+  - Is Build smaller/quicker if Ops.Name is used?
+
+Before batch...
+Time: 81857
+cut: 7731174, swap: 6444050, stack: 309246960, rotate: 11596761, pinPush 3865587, crystal 3865587, collapse: 11596761
+
+Solver results
+size: 3865587
+Writing file: BigData/shapes.db
+max cost: 112 (70)
+total cost: 183637114
+
+After batch... (size 100,000)
+Time: 80843
+cut: 7731174, swap: 6444050, stack: 309246960, rotate: 11596761, pinPush 3865587, crystal 3865587, collapse: 11596761
+
+Solver results
+size: 3865587
+Writing file: BigData/shapes.db
+max cost: 112 (70)
+total cost: 183637114
+
+Looks like batch works okay.
+

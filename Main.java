@@ -39,7 +39,6 @@ public class Main {
     Runtime.getRuntime().removeShutdownHook(exitHook);
 
     f.saveResults();
-    // ShapeFile.sort("BigData/shapes.db");
   }
 
 }
