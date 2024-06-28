@@ -15,7 +15,7 @@ import java.util.stream.IntStream;
 public class Solver {
   private static final int MAX_ITERS = 1000;
   private static final int MAX_COST = 1000;
-  private static final int MAX_LAYERS = 4;
+  private static final int MAX_LAYERS = 3;
   private static final int BATCH_SIZE = 100000;
 
   private static final int PRIM_COST = 1;
@@ -28,14 +28,14 @@ public class Solver {
   private static final Ops.Name[] TWO_OPS = { Ops.Name.SWAP_RIGHT, Ops.Name.SWAP_LEFT, Ops.Name.STACK };
 
   static class Build {
-    byte op;
     int cost;
+    Ops.Name opName;
     int shape; // result shape
     int shape1, shape2; // input shapes
 
-    Build(int op, int cost, int... shapes) {
-      this.op = (byte) op;
+    Build(int cost, Ops.Name opName, int... shapes) {
       this.cost = cost;
+      this.opName = opName;
       this.shape = shapes[0];
       if (shapes.length > 1)
         this.shape1 = shapes[1];
@@ -46,7 +46,7 @@ public class Solver {
 
   static String buildAsString(Build build) {
     String result;
-    String opCode = Ops.nameByValue.get((int) build.op).code;
+    String opCode = build.opName.code;
     if (build.shape2 == 0)
       result = String.format("%3d %08x <- %s(%08x)", build.cost, build.shape, opCode, build.shape1);
     else
@@ -136,11 +136,11 @@ public class Solver {
       Build oldBuild = allBuilds.get(result), newBuild = null;
       int cost = cost(opName, shape);
       if (oldBuild == null) {
-        newBuild = new Build(opName.value, cost, result, shape);
+        newBuild = new Build(cost, opName, result, shape);
         allBuilds.put(result, newBuild);
       } else if (cost < oldBuild.cost) {
         oldBuilds.add(oldBuild);
-        newBuild = new Build(opName.value, cost, result, shape);
+        newBuild = new Build(cost, opName, result, shape);
         allBuilds.put(result, newBuild);
       }
       // debugBuild("OLD", oldBuild);
@@ -158,11 +158,11 @@ public class Solver {
       Build oldBuild = allBuilds.get(result), newBuild = null;
       int cost = cost(opName, shape1, shape2);
       if (oldBuild == null) {
-        newBuild = new Build(opName.value, cost, result, shape1, shape2);
+        newBuild = new Build(cost, opName, result, shape1, shape2);
         allBuilds.put(result, newBuild);
       } else if (cost < oldBuild.cost) {
         oldBuilds.add(oldBuild);
-        newBuild = new Build(opName.value, cost, result, shape1, shape2);
+        newBuild = new Build(cost, opName, result, shape1, shape2);
         allBuilds.put(result, newBuild);
       }
       // debugBuild("OLD", oldBuild);
@@ -185,11 +185,9 @@ public class Solver {
     int cost = opCosts.get(opName) + build1.cost + build2.cost;
     // if Op is FAST_SWAP, reduce cost for each CUT that was done just prior
     if (opName == Ops.Name.FAST_SWAP) {
-      Ops.Name opName1 = Ops.nameByValue.get((int) build1.op);
-      Ops.Name opName2 = Ops.nameByValue.get((int) build2.op);
-      if ((opName1 == Ops.Name.CUT_RIGHT) || (opName2 == Ops.Name.CUT_RIGHT))
+      if ((build1.opName == Ops.Name.CUT_RIGHT) || (build2.opName == Ops.Name.CUT_RIGHT))
         cost -= opCosts.get(Ops.Name.CUT_RIGHT);
-      if ((opName1 == Ops.Name.CUT_LEFT) || (opName2 == Ops.Name.CUT_LEFT))
+      if ((build1.opName == Ops.Name.CUT_LEFT) || (build2.opName == Ops.Name.CUT_LEFT))
         cost -= opCosts.get(Ops.Name.CUT_LEFT);
     }
     return cost;
@@ -217,7 +215,7 @@ public class Solver {
     Tools.displayShapes(shapes);
 
     Arrays.stream(shapes).forEach(shape -> newShapes.get(PRIM_COST).add(shape));
-    Arrays.stream(shapes).forEach(shape -> allBuilds.put(shape, new Build(Ops.Name.NOP.value, PRIM_COST, shape)));
+    Arrays.stream(shapes).forEach(shape -> allBuilds.put(shape, new Build(PRIM_COST, Ops.Name.NOP, shape)));
 
     Set<Integer> newShapes, inputShapes = new HashSet<>();
     for (int cost = PRIM_COST; cost < MAX_COST; ++cost) {
@@ -242,7 +240,6 @@ public class Solver {
       }
     }
     System.out.printf("DONE\n\n");
-    saveResults();
   }
 
   /**

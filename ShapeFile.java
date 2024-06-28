@@ -68,8 +68,7 @@ public class ShapeFile {
       Arrays.parallelSort(shapes, (x, y) -> Integer.compareUnsigned(x, y));
       for (Integer shape : shapes) {
         Solver.Build build = data.get(shape);
-        out.printf("%08x,%s,%08x,%08x,%02x\n", shape, Ops.nameByValue.get((int) build.op).code, build.shape1,
-            build.shape2, build.cost);
+        out.printf("%08x,%s,%08x,%08x,%02x\n", shape, build.opName.code, build.shape1, build.shape2, build.cost);
       }
     } catch (Exception e) {
       System.err.printf("Error writing file: %s\n", name);
@@ -92,7 +91,7 @@ public class ShapeFile {
         shape1 = Integer.parseUnsignedInt(scan.next(), BASE);
         shape2 = Integer.parseUnsignedInt(scan.next(), BASE);
         cost = scan.nextInt();
-        dataMap.put(shape, new Solver.Build(Ops.nameByCode.get(opCode).value, cost, shape, shape1, shape2));
+        dataMap.put(shape, new Solver.Build(cost, Ops.nameByCode.get(opCode), shape, shape1, shape2));
       }
     } catch (Exception e) {
       System.err.printf("Error reading file: %s\n", name);

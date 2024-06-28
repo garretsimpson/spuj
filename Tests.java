@@ -423,20 +423,19 @@ public class Tests {
   }
 
   static String buildAsString(int shape, Solver.Build build) {
-    String opCode = Ops.nameByValue.get((int) build.op).code;
-    if (build.op == Ops.Name.NOP.value)
+    if (build.opName == Ops.Name.NOP)
       return String.format("%08x <--", shape);
     else if (build.shape2 == 0)
-      return String.format("%08x <- %s(%08x)", shape, opCode, build.shape1);
+      return String.format("%08x <- %s(%08x)", shape, build.opName.code, build.shape1);
     else
-      return String.format("%08x <- %s(%08x, %08x)", shape, opCode, build.shape1, build.shape2);
+      return String.format("%08x <- %s(%08x, %08x)", shape, build.opName.code, build.shape1, build.shape2);
   }
 
   static void findSolution(Map<Integer, Solver.Build> builds, int shape, int indent) {
     Solver.Build build = builds.get(shape);
     System.out.printf("%3d ", build.cost);
     System.out.println("  ".repeat(indent) + buildAsString(shape, build));
-    if (build.op == Ops.Name.NOP.value)
+    if (build.opName == Ops.Name.NOP)
       return;
     findSolution(builds, build.shape1, indent + 1);
     if (build.shape2 != 0)

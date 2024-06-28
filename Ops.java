@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -30,45 +31,28 @@ class Ops {
   }
 
   enum Name {
-    NOP(0, "--") {},
-    ROTATE_RIGHT(0x01, "RR") {},
-    ROTATE_180(0x02, "RU") {},
-    ROTATE_LEFT(0x03, "RL") {},
-    CUT_RIGHT(0x04, "CR") {},
-    CUT_LEFT(0x05, "CL") {},
-    PINPUSH(0x06, "PP") {},
-    CRYSTAL(0x07, "XX") {},
-    SWAP_RIGHT(0x10, "SR") {},
-    SWAP_LEFT(0x11, "SL") {},
-    FAST_SWAP(0x12, "SW") {},
-    STACK(0x13, "ST") {};
+    NOP("--") {},
+    ROTATE_RIGHT("RR") {},
+    ROTATE_180("RU") {},
+    ROTATE_LEFT("RL") {},
+    CUT_RIGHT("CR") {},
+    CUT_LEFT("CL") {},
+    PINPUSH("PP") {},
+    CRYSTAL("XX") {},
+    SWAP_RIGHT("SR") {},
+    SWAP_LEFT("SL") {},
+    FAST_SWAP("SW") {},
+    STACK("ST") {};
 
-    byte value;
     String code;
 
-    Name(int value, String code) {
-      this.value = (byte) value;
+    Name(String code) {
       this.code = code;
-      // nameCodes.put(value, code);
-      // nameValues.put(code, value);
-      nameByValue.put(value, this);
       nameByCode.put(code, this);
     }
   }
 
-  // static HashMap<Integer, String> nameCodes = new HashMap<>();
-  // static HashMap<String, Integer> nameValues = new HashMap<>();
-  // static final String NOP_CODE = Name.NOP.code; // force Ops.Name to init
-  static HashMap<Integer, Name> nameByValue = new HashMap<>();
-  static HashMap<String, Name> nameByCode = new HashMap<>();
-
-  // static String getCode(int value) {
-  // return nameCodes.get(value);
-  // }
-
-  // static int getValue(String code) {
-  // return nameValues.get(code).intValue();
-  // }
+  static Map<String, Name> nameByCode = new HashMap<>();
 
   static int invoke(Name opName, int... shapes) {
     switch (opName) {

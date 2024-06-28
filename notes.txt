@@ -2119,7 +2119,7 @@ TODO
 - Confirm todo shapes are correct after COST 1 iter. DONE
   - There are only 2 cost 5 shapes found?  Should be 4 I think.
   - doOp(x,y) is called 4 times, but 2 results are already known (pins under) with lower cost.
-  - It finds old builds with lower costs, so they are not replaced / added.
+  - It finds old builds with lower costs, so they are not replaced or added.
 - Add batch processing back. DONE
 - Incremental saves.
 - Save all builds on shutdown.  DONE
@@ -2237,4 +2237,28 @@ DUPS                 207,136  lower cost builds
 - What would the best set of numbers / stats be?
 
 TODO
-- Maybe put spew in a log file.
+- Maybe write spew to a log file?
+- Alternate costs?
+- Alternate solver alg?  e.g. turn-off tiered todo to make it faster
+- shape viewer upgrade would be nice.
+- prototype GPU processing.  OpenCL, CUDA, others?
+- run 4-layer to completion.
+
+With 1-layer tops...
+
+Solver results
+TOTAL                 35,280
+SUM_COST           1,011,995
+MAX_COST                  71 (47)
+
+With multi-layer tops...
+Solver results
+TOTAL                 35,280
+SUM_COST           1,011,691
+MAX_COST                  71 (47)
+
+file shapes2_7.db
+
+The max cost is the same.
+The sum cost is 304 less.
+That's about 100 stack ops, out of 35,000 shapes.
