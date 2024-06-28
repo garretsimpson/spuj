@@ -53,19 +53,20 @@ public class Tests {
   }
 
   static void run() {
-    // loadSolutions(SOLUTION_FILENAME);
+    loadSolutions(SOLUTION_FILENAME);
     // loadShapes();
     // shapeStats();
     // findImpossibleShapes();
     // filterPossibleShapes();
     // filterImpossibleShapes();
-    // findSolution(0x00ff005f);
+    findSolution(allBuilds, 0xffffffff);
+    // findSolution(allBuilds, 0x00ff005f);
     // findSolution(0x0f030f3f);
     // findSolution(0x0f330f3f);
     // findSolution(0x0003001c);
     // code2();
     // code3();
-    compFiles("BigData/shapes-4.db", "BigData/shapes-5.db");
+    // compFiles("BigData/shapes-4.db", "BigData/shapes-5.db");
   }
 
   private static void loadShapes() {
@@ -444,6 +445,10 @@ public class Tests {
 
   static void findSolution(Map<Integer, Solver.Build> builds, int shape) {
     System.out.printf("Find solution for: %08x\n", shape);
+    if (builds == null || builds.get(shape) == null) {
+      System.out.println("Build database or shape is missing");
+      return;
+    }
     findSolution(builds, shape, 0);
   }
 

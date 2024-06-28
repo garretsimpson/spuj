@@ -108,6 +108,9 @@ public class Solver {
     srcSet.removeAll(dstSet);
   }
 
+  /**
+   * Return true if input shape is less than max layer count.
+   */
   private boolean maxLayers(int shape) {
     if (shape == 0)
       return false;
@@ -127,7 +130,7 @@ public class Solver {
 
   private int doOp(Ops.Name opName, int shape) {
     int result = Ops.invoke(opName, shape);
-    if ((result == shape) || !maxLayers(result))
+    if (exit || (result == shape) || !maxLayers(result))
       return 0;
     synchronized (allBuilds) {
       Build oldBuild = allBuilds.get(result), newBuild = null;
@@ -149,7 +152,7 @@ public class Solver {
   private int doOp(Ops.Name opName, int shape1, int shape2) {
     int result = Ops.invoke(opName, shape1, shape2);
     // debugBuild("INP", new Build(opName.value, 0, result, shape1, shape2));
-    if ((result == shape1) || (result == shape2) || !maxLayers(result))
+    if (exit || (result == shape1) || (result == shape2) || !maxLayers(result))
       return 0;
     synchronized (allBuilds) {
       Build oldBuild = allBuilds.get(result), newBuild = null;
@@ -218,7 +221,9 @@ public class Solver {
 
     Set<Integer> newShapes, inputShapes = new HashSet<>();
     for (int cost = PRIM_COST; cost < MAX_COST; ++cost) {
-      if (cost > MAX_ITERS)
+      if (exit)
+        return;
+      if ((cost > MAX_ITERS))
         break;
       newShapes = this.newShapes.get(cost);
       if (newShapes.size() > 0) {
@@ -237,6 +242,7 @@ public class Solver {
       }
     }
     System.out.printf("DONE\n\n");
+    saveResults();
   }
 
   /**
@@ -300,18 +306,18 @@ public class Solver {
   }
 
   void saveResults() {
-    System.out.println("Solver results");
-    System.out.printf("size: %d\n", allBuilds.size());
     ShapeFile.writeDB(RESULTS, allBuilds);
     int maxCost = allBuilds.values().stream().mapToInt(v -> v.cost).max().getAsInt();
     int totalCost = allBuilds.values().stream().mapToInt(v -> v.cost).sum();
-    System.out.printf("max cost: %d (%x)\n", maxCost, maxCost);
-    System.out.printf("total cost: %d\n", totalCost);
+    System.out.println("\nSolver results");
+    System.out.printf("TOTAL     %,10d\n", allBuilds.size());
+    System.out.printf("MAX_COST  %,10d (%x)\n", maxCost, maxCost);
+    System.out.printf("SUM_COST  %,10d\n", totalCost);
   }
 
   void shutdown() {
     exit = true;
-    ShapeFile.writeDB(RESULTS, allBuilds);
+    saveResults();
   }
 
 }

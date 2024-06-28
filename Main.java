@@ -14,9 +14,9 @@ public class Main {
 
     // ShapeTests.run();
     // OpTests.run();
-    // Tests.run();
+    Tests.run();
 
-    makeShapes();
+    // makeShapes();
   }
 
   static void makeShapes() {
@@ -36,9 +36,7 @@ public class Main {
     System.out.printf("Time: %d\n", after - before);
     System.out.println(Ops.Stats.asString());
 
-    Runtime.getRuntime().removeShutdownHook(exitHook);
-
-    f.saveResults();
+    // Runtime.getRuntime().removeShutdownHook(exitHook);
   }
 
 }

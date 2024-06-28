@@ -2126,6 +2126,8 @@ TODO
   - Reduce memory size to avoid swapping to disk.
   - Does Build need the result shape?
   - Is Build smaller/quicker if Ops.Name is used?
+- It keeps running multiple tiers after ^C.
+- check for exit flag in doOp.
 
 Before batch...
 Time: 81857
@@ -2148,4 +2150,38 @@ max cost: 112 (70)
 total cost: 183637114
 
 Looks like batch works okay.
+
+Run 4-layer up to cost 32, and then hit ^C...
+
+COST                      33
+SIZE                 100,000
+TOTAL              6,269,730
+ONE_OPS              700,000
+TWO_OPS    3,791,838,000,000
+Shutdown
+Writing file: BigData/shapes.db
+BUILDS            66,624,419
+DUPS                 177,326
+
+file shapes4_1.db
+
+I did not see a max or total cost output, but the file is over 2GB.
+It saved 66,487,065 builds out of 346,030,017 total.  That's about 20%.
+
+Somewhere in the middle of the file...
+80000888,CL,90000999,00000000,10
+...
+ffffffff,XX,ffff0000,00000000,06
+00000001,CR,00000009,00000000,04
+...
+7fffffff,XX,08888000,00000000,09
+
+Looks like it sorted them numerically, puting negative values first.
+
+SIZE         414,416
+MAX COST          29 (1d)
+SUM COST   9,165,904
+
+Fixed it by using unsignedCompare in the sort.
+Also fixed readDB by using parseUnsignedInt.
 
