@@ -2237,6 +2237,7 @@ DUPS                 207,136  lower cost builds
 - What would the best set of numbers / stats be?
 
 TODO
+- Faster DB file reader
 - Maybe write spew to a log file?
 - Alternate costs?
 - Alternate solver alg?  e.g. turn-off tiered todo to make it faster

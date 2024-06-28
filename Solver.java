@@ -54,11 +54,22 @@ public class Solver {
     return result;
   }
 
+  // class Dups {
+  // int cost;
+  // int shape;
+
+  // Dups(int cost, int shape) {
+  // this.cost = cost;
+  // this.shape = shape;
+  // }
+  // }
+
   private Set<Integer> allShapes = new HashSet<>();
   private List<Set<Integer>> newShapes = new ArrayList<>(MAX_COST);
 
   private Map<Integer, Build> allBuilds = Collections.synchronizedMap(new HashMap<>());
   private List<Build> oldBuilds = Collections.synchronizedList(new ArrayList<>());
+  // private List<Dups> dups = Collections.synchronizedList(new ArrayList<>());
 
   private static Map<Ops.Name, Integer> opCosts = new HashMap<>();
 
