@@ -201,7 +201,7 @@ public class Solver {
     for (int i = 0; i < newShapes.size(); ++i) {
       size = newShapes.get(i).size();
       if (size > 0)
-        sb.append(String.format("%4d: %,8d\n", i, size));
+        sb.append(String.format("%4d: %,10d\n", i, size));
     }
     return sb.toString();
   }
@@ -221,9 +221,7 @@ public class Solver {
 
     Set<Integer> newShapes, inputShapes = new HashSet<>();
     for (int cost = PRIM_COST; cost < MAX_COST; ++cost) {
-      if (exit)
-        return;
-      if ((cost > MAX_ITERS))
+      if (cost > MAX_ITERS)
         break;
       newShapes = this.newShapes.get(cost);
       if (newShapes.size() > 0) {
@@ -239,6 +237,8 @@ public class Solver {
         allShapes.addAll(inputShapes);
         inputShapes.clear();
         System.out.println();
+        if (exit)
+          return;
       }
     }
     System.out.printf("DONE\n\n");
@@ -254,8 +254,6 @@ public class Solver {
     Set<Integer> shapes = Collections.synchronizedSet(new HashSet<Integer>());
     List<IntStream> streams = new ArrayList<>();
     int inputLen = inputShapes.size();
-
-    oldBuilds.clear();
 
     System.out.printf("ONE_OPS %,20d\n", 1l * ONE_OPS.length * inputLen);
     for (Ops.Name opName : ONE_OPS) {
@@ -283,7 +281,11 @@ public class Solver {
     shapes.stream().forEach(shape -> newShapes.get(allBuilds.get(shape).cost).add(shape));
 
     System.out.printf("BUILDS  %,20d\n", allBuilds.size());
+    System.out.printf("FOUND   %,20d\n", shapes.size());
     System.out.printf("DUPS    %,20d\n", oldBuilds.size());
+
+    shapes.clear();
+    oldBuilds.clear();
   }
 
   /* This "completes the square" by doing all operations that have not been done before. */
@@ -310,9 +312,9 @@ public class Solver {
     int maxCost = allBuilds.values().stream().mapToInt(v -> v.cost).max().getAsInt();
     int totalCost = allBuilds.values().stream().mapToInt(v -> v.cost).sum();
     System.out.println("\nSolver results");
-    System.out.printf("TOTAL     %,10d\n", allBuilds.size());
-    System.out.printf("MAX_COST  %,10d (%x)\n", maxCost, maxCost);
-    System.out.printf("SUM_COST  %,10d\n", totalCost);
+    System.out.printf("TOTAL     %,18d\n", allBuilds.size());
+    System.out.printf("SUM_COST  %,18d\n", totalCost);
+    System.out.printf("MAX_COST  %,18d (%x)\n", maxCost, maxCost);
   }
 
   void shutdown() {

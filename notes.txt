@@ -2089,7 +2089,8 @@ DEBUG:  12 00cc00c1 <- RU(00330034)
 Looks like it got 3 new builds all at the same time.
 Somehow the 13 won, and then was replaced later with a 12.
 
-I added a sync block around allBuilds.get() and allBuilds.put().
+Fixed - I added a sync block around allBuilds.get() and allBuilds.put().
+
 2-layer...
 total cost: 1011995
 3-layer...
@@ -2115,19 +2116,19 @@ Yeah! all the stats and costs are now the same each run.
 It just takes twice as long as without the tiered todo.
 
 TODO
-- Confirm todo shapes are correct after COST 1 iter.
+- Confirm todo shapes are correct after COST 1 iter. DONE
   - There are only 2 cost 5 shapes found?  Should be 4 I think.
   - doOp(x,y) is called 4 times, but 2 results are already known (pins under) with lower cost.
   - It finds old builds with lower costs, so they are not replaced / added.
-- Add batch processing back.
+- Add batch processing back. DONE
 - Incremental saves.
-- Save all builds on shutdown.
+- Save all builds on shutdown.  DONE
 - Optimizations
   - Reduce memory size to avoid swapping to disk.
   - Does Build need the result shape?
   - Is Build smaller/quicker if Ops.Name is used?
 - It keeps running multiple tiers after ^C.
-- check for exit flag in doOp.
+- check for exit flag in doOp.  DONE
 
 Before batch...
 Time: 81857
@@ -2185,3 +2186,55 @@ SUM COST   9,165,904
 Fixed it by using unsignedCompare in the sort.
 Also fixed readDB by using parseUnsignedInt.
 
+TODO
+- What if?  I know all the 3-layer parts without crystals.  Can this be used to speed up the 4-ayer stack ops?
+  - Really need all 4-layer (or less) parts without crystals.  I can get this from the Constructor.
+  - And does it help?
+  - Still need to do a lot more stack ops.
+  - But don't need to weed out the bad ones by checking that the part has no crystals.
+
+Ran 4-layers to cost 42...
+
+COST                      43
+SIZE                 100,000
+TOTAL             30,406,698
+ONE_OPS              700,000
+TWO_OPS   18,274,018,800,000
+BUILDS           154,336,312
+DUPS                  96,750
+
+SIZE                 100,000
+TOTAL             30,506,698
+ONE_OPS              700,000
+TWO_OPS   18,334,018,800,000
+Shutdown
+Writing file: BigData/shapes.db
+BUILDS           154,477,500
+DUPS                  26,557
+...
+Time: 3137851
+cut: 68568600, swap: 276407072, stack: 2742744000, rotate: 102852900, pinPush 34284300, crystal 34284300, collapse: 102852900
+
+file shapes4_2.db
+
+Took a _long_ time to save the file.
+Has 154,477,500 entries
+
+FOUND              1,589,211  new shapes
+                     567,278  new builds
+DUPS                 207,136  lower cost builds
+
+- new shapes are shapes that are not in the todo list yet.
+- but they may or may not be in the build list:
+  - not in the build list (added to build)
+  - lower cost (dup) (replaces a build)
+  - same or higher cost (not added to builds)
+- so that would be about 800,000 new shapes found with a higher cost and not added to the build.
+- they would have been found before, added to both the build and todo lists.
+- but they don't get added to the done list (allShapes) until after they were input shapes and used.
+- might be better to break down these numbers better.
+- maybe capture more stats to make sure they are correct.
+- What would the best set of numbers / stats be?
+
+TODO
+- Maybe put spew in a log file.
