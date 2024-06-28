@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -17,19 +18,21 @@ import java.util.stream.IntStream;
 public class ShapeFile {
 
   static void write(String name, int[] data) {
-    write(name, IntStream.of(data), false);
+    Set<Integer> dataSet = IntStream.of(data).boxed().collect(Collectors.toSet());
+    write(name, dataSet, false);
   }
 
   static void write(String name, Set<Integer> data) {
-    write(name, data.stream().mapToInt(Integer::intValue), false);
+    write(name, data, false);
   }
 
   static void append(String name, int[] data) {
-    write(name, IntStream.of(data), true);
+    Set<Integer> dataSet = IntStream.of(data).boxed().collect(Collectors.toSet());
+    write(name, dataSet, true);
   }
 
   static void append(String name, Set<Integer> data) {
-    write(name, data.stream().mapToInt(Integer::intValue), true);
+    write(name, data, true);
   }
 
   static void writeDB(String name, Map<Integer, Solver.Build> data) {
@@ -76,14 +79,34 @@ public class ShapeFile {
     return dataSet;
   }
 
-  static void write(String name, IntStream data, boolean append) {
+  static void write(String name, Set<Integer> data, boolean append) {
+    final int BIG_DATA_SIZE = 10000000;
     System.out.printf("Writing file: %s\n", name);
     try (FileWriter file = new FileWriter(name, append)) {
       PrintWriter out = new PrintWriter(file);
-      data.forEach(value -> out.printf("%08x\n", value));
+      if (data.size() < BIG_DATA_SIZE)
+        writeFast(out, data);
+      else
+        writeSlow(out, data);
     } catch (Exception e) {
       System.err.printf("Error writing file: %s\n", name);
       e.printStackTrace();
+    }
+  }
+
+  private static void writeFast(PrintWriter out, Set<Integer> data) {
+    Integer[] shapes = data.toArray(Integer[]::new);
+    Arrays.parallelSort(shapes, (x, y) -> Integer.compareUnsigned(x, y));
+    for (Integer shape : shapes)
+      out.printf("%08x\n", shape);
+  }
+
+  private static void writeSlow(PrintWriter out, Set<Integer> data) {
+    int shape;
+    for (long i = 0; i <= 0xffffffffl; ++i) {
+      shape = (int) i;
+      if (data.contains(shape))
+        out.printf("%08x\n", shape);
     }
   }
 

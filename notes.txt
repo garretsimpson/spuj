@@ -2263,3 +2263,65 @@ file shapes2_7.db
 The max cost is the same.
 The sum cost is 304 less.
 That's about 100 stack ops, out of 35,000 shapes.
+
+Find most complex 1-layer shape...
+
+000f0005,SW,000c0004,00030001,1f
+
+Find solution for: 000f0005
+ 31 000f0005 <- SW(00030001, 000c0004)
+ 15   00030001 <- CR(00070009)
+ 14     00070009 <- RR(000b000c)
+ 13       000b000c <- SW(0008000c, 00030000)
+ 10         0008000c <- CL(0008000f)
+  9           0008000f <- XX(00000007)
+  7             00000007 <- SW(00000003, 00000004)
+  2               00000003 <- CR(0000000f)
+  1                 0000000f <--
+  4               00000004 <- CL(00000006)
+  3                 00000006 <- RR(00000003)
+  2                   00000003 <- CR(0000000f)
+  1                     0000000f <--
+  2         00030000 <- CR(000f0000)
+  1           000f0000 <--
+ 15   000c0004 <- CL(000d0006)
+ 14     000d0006 <- RL(000b000c)
+ 13       000b000c <- SW(0008000c, 00030000)
+ 10         0008000c <- CL(0008000f)
+  9           0008000f <- XX(00000007)
+  7             00000007 <- SW(00000003, 00000004)
+  2               00000003 <- CR(0000000f)
+  1                 0000000f <--
+  4               00000004 <- CL(00000006)
+  3                 00000006 <- RR(00000003)
+  2                   00000003 <- CR(0000000f)
+  1                     0000000f <--
+  2         00030000 <- CR(000f0000)
+  1           000f0000 <--
+
+  This doesn't look correct.
+  000f0005 is pins/crystal checkers, yes?
+  value: 000f0005, code: crP-crP-:--------:--------:--------
+  where are the pins comming from?
+  I see now pins are input.
+  It makes a mold with 1 gap crystalize, swaps it with pins, rotates.
+  Does this twice, and then swaps.
+  It's long because it has (10) extra cuts before the swaps.
+
+Find most complex 2-layer shape...
+
+00ff005f,SW,00330013,00cc004c,47
+
+That's my angry bird.
+It's the 1-layer shape on top of solid crystal layer.
+
+Find most complex 3-layer shape...
+
+0f330f3f,RR,0f990f9f,00000000,70
+
+This is the one before, it is now less cost (but that may be because it was wrong before)
+0f030f3f,RL,0f060f6f,00000000,6c
+
+file shapes1-all.db
+file shapes2-all.db
+file shapes3-all.db

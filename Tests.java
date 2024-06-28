@@ -59,7 +59,8 @@ public class Tests {
     // findImpossibleShapes();
     // filterPossibleShapes();
     // filterImpossibleShapes();
-    findSolution(allBuilds, 0xffffffff);
+    // findSolution(allBuilds, 0xffffffff);
+    // findSolution(allBuilds, 0x000f0005);
     // findSolution(allBuilds, 0x00ff005f);
     // findSolution(0x0f030f3f);
     // findSolution(0x0f330f3f);
@@ -67,6 +68,8 @@ public class Tests {
     // code2();
     // code3();
     // compFiles("BigData/shapes-4.db", "BigData/shapes-5.db");
+
+    System.out.println(new Shape(0x000f0005));
   }
 
   private static void loadShapes() {

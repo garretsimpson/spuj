@@ -162,7 +162,7 @@ public class Solver {
 
   private int doOp(Ops.Name opName, int shape1, int shape2) {
     int result = Ops.invoke(opName, shape1, shape2);
-    // debugBuild("INP", new Build(opName.value, 0, result, shape1, shape2));
+    // debugBuild("INP", new Build(0, opName, result, shape1, shape2));
     if (exit || (result == shape1) || (result == shape2) || !maxLayers(result))
       return 0;
     synchronized (allBuilds) {

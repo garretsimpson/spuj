@@ -68,7 +68,6 @@ public class Constructor {
     Tools.displayShapes(shapes);
 
     Arrays.stream(shapes).forEach(newShapes::add);
-    ShapeFile.delete(RESULTS);
 
     Set<Integer> inputShapes;
     for (int i = 1; i <= MAX_ITERS; ++i) {
@@ -77,7 +76,6 @@ public class Constructor {
       /* TODO: add inputShapes to allShapes before calling makeShapes */
       makeShapes(inputShapes);
       allShapes.addAll(inputShapes);
-      ShapeFile.append(RESULTS, inputShapes);
 
       if (newShapes.size() > 0) {
         System.out.printf("TODO %d\n\n", newShapes.size());
@@ -86,8 +84,6 @@ public class Constructor {
         break;
       }
     }
-    if (newShapes.size() > 0)
-      ShapeFile.append(RESULTS, newShapes);
   }
 
   /**
@@ -155,8 +151,7 @@ public class Constructor {
   }
 
   void shutdown() {
-    if (newShapes.size() > 0)
-      ShapeFile.append(RESULTS, newShapes);
+    saveResults();
   }
 
 }
