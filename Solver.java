@@ -15,8 +15,8 @@ import java.util.stream.IntStream;
 public class Solver {
   private static final int MAX_ITERS = 1000;
   private static final int MAX_COST = 1000;
-  private static final int MAX_LAYERS = 3;
-  private static final int BATCH_SIZE = 10000;
+  private static final int MAX_LAYERS = 4;
+  private static final int BATCH_SIZE = 100000;
 
   private static final int PRIM_COST = 1;
   private static boolean exit = false;
