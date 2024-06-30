@@ -22,8 +22,8 @@ public class Main {
   static void makeShapes() {
     Ops.Stats.clear();
 
-    Constructor f = new Constructor();
-    // Solver f = new Solver();
+    // Constructor f = new Constructor();
+    Solver f = new Solver();
     Thread exitHook = new Thread(() -> {
       System.out.println("Shutdown");
       f.shutdown();

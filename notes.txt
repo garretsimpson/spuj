@@ -2325,3 +2325,22 @@ This is the one before, it is now less cost (but that may be because it was wron
 file shapes1-all.db
 file shapes2-all.db
 file shapes3-all.db
+
+COST                     100  // the current cost tier
+SIZE                     312  // the size of the batch passed to makeShapes
+TOTAL              3,864,489  // size of allShapes, old shapes that have already been used as inputs
+BUILDS             3,865,371  // total number of shapes seen before running makeShapes
+ONE_OPS                2,184  // number of one-input ops to be performed (before optimization)
+TWO_OPS        7,234,615,440  // number of two-input ops to be performed (before optimization)
+BUILDS             3,865,435  // total number of shapes seen after running makeShapes
+FOUND                    120  // number of shapes found (not used as input shapes before)
+DUPS                      40  // number of lower cost builds found
+NEW                       64  // number of new shapes found
+
+On Linux
+# wget https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.3%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.3_9.tar.gz
+# sudo dnf install git-all
+
+
+java\jdk-17.0.11.9-hotspot\bin\java.exe' '-Xmx30G' '-XX:+ShowCodeDetailsInExceptionMessages' '-cp' 'C:\Users\garre\AppData\Roaming\Code\User\workspaceStorage\1f139cac62d3d1187115fd431c1f8993\redhat.java\jdt_ws\spuj_6a082ba4\bin' 'Main'
+

@@ -15,8 +15,8 @@ import java.util.stream.IntStream;
 public class Solver {
   private static final int MAX_ITERS = 1000;
   private static final int MAX_COST = 1000;
-  private static final int MAX_LAYERS = 3;
-  private static final int BATCH_SIZE = 100000;
+  private static final int MAX_LAYERS = 2;
+  private static final int BATCH_SIZE = 1000000;
 
   private static final int PRIM_COST = 1;
   private static boolean exit = false;
@@ -242,6 +242,7 @@ public class Solver {
         takeValues(inputShapes, newShapes, BATCH_SIZE);
         System.out.printf("SIZE    %,20d\n", inputShapes.size());
         System.out.printf("TOTAL   %,20d\n", allShapes.size());
+        System.out.printf("BUILDS  %,20d\n", allBuilds.size());
         makeShapes(inputShapes);
         allShapes.addAll(inputShapes);
         inputShapes.clear();
@@ -262,6 +263,7 @@ public class Solver {
     Set<Integer> shapes = Collections.synchronizedSet(new HashSet<Integer>());
     List<IntStream> streams = new ArrayList<>();
     int inputLen = inputShapes.size();
+    int numBuilds = allBuilds.size();
 
     System.out.printf("ONE_OPS %,20d\n", 1l * ONE_OPS.length * inputLen);
     for (Ops.Name opName : ONE_OPS) {
@@ -285,12 +287,12 @@ public class Solver {
     // Remove old duplicate shapes
     oldBuilds.stream().forEach(build -> newShapes.get(build.cost).remove(build.shape));
 
-    // Insert new new shapes
+    // Insert new shapes
     shapes.stream().forEach(shape -> newShapes.get(allBuilds.get(shape).cost).add(shape));
 
-    System.out.printf("BUILDS  %,20d\n", allBuilds.size());
     System.out.printf("FOUND   %,20d\n", shapes.size());
     System.out.printf("DUPS    %,20d\n", oldBuilds.size());
+    System.out.printf("NEW     %,20d\n", allBuilds.size() - numBuilds);
 
     shapes.clear();
     oldBuilds.clear();
