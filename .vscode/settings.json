@@ -2,5 +2,8 @@
   "java.format.settings.url": ".vscode/java-formatter.xml",
   "[java]": {
     "editor.detectIndentation": true
-  }
+  },
+  "java.project.sourcePaths": ["src"],
+  "java.project.referencedLibraries": [],
+  "java.project.outputPath": "bin"
 }

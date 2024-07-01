@@ -13,7 +13,7 @@ import java.util.stream.IntStream;
  * Solver
  */
 public class Solver {
-  private static final int MAX_ITERS = 1000;
+  private static final int MAX_ITERS = 10;
   private static final int MAX_COST = 1000;
   private static final int MAX_LAYERS = 2;
   private static final int BATCH_SIZE = 1000000;

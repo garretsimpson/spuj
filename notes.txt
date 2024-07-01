@@ -2340,7 +2340,97 @@ NEW                       64  // number of new shapes found
 On Linux
 # wget https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.3%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.3_9.tar.gz
 # sudo dnf install git-all
+# git clone https://github.com/garretsimpson/spuj.git
+# ~/java/jdk-21.0.3+9/bin/javac *.java
+# ~/java/jdk-21.0.3+9/bin/java -Xmx54G Main
+
+TODO
+- Why is Sovler 6x slower than Constructor?
+- Add more metrics?
+- Try Streams of Builds rather than accessing commin allBuilds.
+
+Ran out of memory...
+
+SIZE                 630,438
+TOTAL             79,158,364
+BUILDS           250,684,333
+ONE_OPS            4,413,066
+TWO_OPS  300,619,000,316,124
+FOUND              2,977,273
+DUPS                 664,199
+NEW                  102,191
+...
+COST                      53
+SIZE               1,000,000
+TOTAL             79,788,802
+BUILDS           250,786,524
+ONE_OPS            7,000,000
+TWO_OPS  481,732,812,000,000
+
+Exception: java.lang.OutOfMemoryError thrown from the UncaughtExceptionHandler in thread "ForkJoinPool.commonPool-worker-5"
+
+Exception: java.lang.OutOfMemoryError thrown from the UncaughtExceptionHandler in thread "ForkJoinPool.commonPool-worker-15"
+client_loop: send disconnect: Connection reset
+
+r5a.4xlarge
+
+16 CPU, 128 RAM
+
+Ran to completion...
+
+Time: 41949118
+cut: 692060032, swap: 519193088, stack: 27682401280, rotate: 1038090048, pinPush 346030016, crystal 346030016, collapse: 1038090048
+
+Shutdown
+Writing file: BigData/shapes.db
+
+Solver results
+TOTAL            346,030,016
+SUM_COST       1,564,802,640
+MAX_COST                 148 (94)
+
+Yeah! done in 11.7 hours.
+I wonder what it cost me in CPU hours.
+
+1 less shape than before???
+
+-rw-r--r--. 1 ec2-user ec2-user 11,418,990,528 Jul  1 02:22 shapes.db
+-rw-r--r--. 1 ec2-user ec2-user  2,313,787,844 Jul  1 02:22 shapes.db.gz
+
+That's 11 GB or 2.3 GB compressed.
+
+Hopefully I can compress it and copy it somewhere.
+I don't know if GitHub can store that large a file.
+Looks like it's 2GB.
+  We don't limit the total size of the binary files in the release or the bandwidth used to deliver them. However, each individual file must be smaller than 2 GiB.
+Windows - You can put 4,294,967,295 files into a single folder if drive is formatted with NTFS (would be unusual if it were not) as long as you do not exceed 256 terabytes (single file size and space) or all of disk space that was available whichever is less.
+https://stackoverflow.com/questions/466521/how-many-files-can-i-put-in-a-directory
+
+TODO
+- Array of Arrays to store the data.
+- Each array would be 2^16 entries.
+- data[v1][v2]
+- Probably need to split the data file into parts as well.
+- But 2^16 files is a lot of files for one directory.
+- You can, but that would still be a lot.
+- Maybe 256 files?  Maybe 256 directories?
+- What would be useful?
+
+A binary file with 2^16 entries
+- each entry would need 1 byte for the op and 2 32-bit shape values.  72 bytes?
+- Maybe make it 80 or 96 bytes each.
+- About 5 or 6 MB.
+- But there would still be about 2^16 files.
+- Could do nested directories, but that's a pain.  (Unless there a library for that).
+
+# cat shapes.db | split -d -l1000000 - DB
+
+- 256 files by top-layer?
+- Examples:
+  - shapes00.db - 0xxx0xxx - empty top layer
+  - shapes01.db - 0xxx1xxx - 0001 on the top
+  - etc.
+  - shapesff.db - fxxxfxxx - crystals on top
 
 
-java\jdk-17.0.11.9-hotspot\bin\java.exe' '-Xmx30G' '-XX:+ShowCodeDetailsInExceptionMessages' '-cp' 'C:\Users\garre\AppData\Roaming\Code\User\workspaceStorage\1f139cac62d3d1187115fd431c1f8993\redhat.java\jdt_ws\spuj_6a082ba4\bin' 'Main'
 
