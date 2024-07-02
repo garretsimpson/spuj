@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
@@ -53,7 +54,7 @@ public class Tests {
   }
 
   static void run() {
-    loadSolutions(SOLUTION_FILENAME);
+    // loadSolutions(SOLUTION_FILENAME);
     // loadShapes();
     // shapeStats();
     // findImpossibleShapes();
@@ -68,8 +69,9 @@ public class Tests {
     // code2();
     // code3();
     // compFiles("BigData/shapes-4.db", "BigData/shapes-5.db");
-
-    System.out.println(new Shape(0x000f0005));
+    // System.out.println(new Shape(0x000f0005));
+    allBuilds = ShapeFile.readMultiDB("BigData/dbin");
+    ShapeFile.writeMultiDB("BigData/temp", allBuilds);
   }
 
   private static void loadShapes() {
@@ -78,7 +80,7 @@ public class Tests {
   }
 
   private static void loadSolutions(String name) {
-    allBuilds = ShapeFile.readDB(name);
+    allBuilds = ShapeFile.readDB_old(name);
   }
 
   static void shapeStats() {
@@ -472,8 +474,8 @@ public class Tests {
   }
 
   static void compFiles(String name1, String name2) {
-    Map<Integer, Solver.Build> b1 = ShapeFile.readDB(name1);
-    Map<Integer, Solver.Build> b2 = ShapeFile.readDB(name2);
+    Map<Integer, Solver.Build> b1 = ShapeFile.readDB_old(name1);
+    Map<Integer, Solver.Build> b2 = ShapeFile.readDB_old(name2);
     Set<Integer> keys = b1.keySet();
     int found = 0, cost1, cost2;
     for (Integer key : keys) {

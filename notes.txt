@@ -2432,5 +2432,13 @@ A binary file with 2^16 entries
   - etc.
   - shapesff.db - fxxxfxxx - crystals on top
 
+3-layers
+- find shapes        14 seconds
+- any solution       42 seconds ?
+- low cost solution  85 seconds
 
-
+              shapes  max  time
+1-layer          255   31  0.2 seconds
+2-layer       35,280   71  0.9 seconds
+3-layer    3,865,587  112   85 seconds
+4-layer  346,030,016  148  10+ hours
