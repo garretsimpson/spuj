@@ -275,8 +275,13 @@ class Ops {
   private static int collapse(int shape, int[] quads) {
     Stats.COLLAPSE.increment();
     int part, val;
+    int prevLayer;
+    int v1, v2;
+    boolean supported;
+
     // First layer remains unchanged
     int result = shape & Shape.LAYER_MASK;
+    
     // int[] layerNums = new int[]{1, 2, 3};
     for (int layerNum = 1; layerNum < Shape.NUM_LAYERS; ++layerNum) {
       part = (shape >>> (4 * layerNum)) & Shape.LAYER_MASK;
@@ -291,37 +296,30 @@ class Ops {
         }
       }
 
-      // Find all parts
-      List<Integer> parts = new ArrayList<>(2);
-      int v1 = Shape.v1(part);
-      int v2 = Shape.v2(part);
-      if (v1 == 0x5) {
-        parts.add(part & (Shape.CRYSTAL_MASK << 0));
-        parts.add(part & (Shape.CRYSTAL_MASK << 2));
-      } else if (v1 == 0xa) {
-        parts.add(part & (Shape.CRYSTAL_MASK << 1));
-        parts.add(part & (Shape.CRYSTAL_MASK << 3));
-      } else {
-        parts.add(part);
+      // Check if part is supported
+      prevLayer = (result >>> (4 * (layerNum - 1))) & Shape.LAYER_MASK;
+      v1 = Shape.v1(prevLayer);
+      v2 = Shape.v2(prevLayer);
+      supported = (part & 0xffff & (v1 | v2)) != 0;
+      if (supported) {
+        // copy part
+        result |= part << (4 * layerNum);
+        continue;
       }
 
-      int prevLayer;
-      for (int part1 : parts) {
-        // Check if part is supported
-        prevLayer = (result >>> (4 * (layerNum - 1))) & Shape.LAYER_MASK;
-        v1 = Shape.v1(prevLayer);
-        v2 = Shape.v2(prevLayer);
-        boolean supported = (part1 & 0xffff & (v1 | v2)) != 0;
-        if (supported) {
-          // copy part
-          result |= part1 << (4 * layerNum);
-        } else {
-          // break crystals
-          v2 = Shape.v2(part1);
-          part1 &= ~(v2 * Shape.CRYSTAL_MASK);
-          // drop part
-          result = dropPart(result, part1, layerNum);
-        }
+      // break crystals
+      v2 = Shape.v2(part);
+      part &= ~(v2 * Shape.CRYSTAL_MASK);
+
+      // drop parts
+      if (part == 0x5) {
+        result = dropPart(result, 0x1, layerNum);
+        result = dropPart(result, 0x4, layerNum);
+      } else if (part == 0xa) {
+        result = dropPart(result, 0x2, layerNum);
+        result = dropPart(result, 0x8, layerNum);
+      } else {
+        result = dropPart(result, part, layerNum);
       }
     }
     return result;
@@ -375,6 +373,13 @@ class Ops {
 
   static int pinPush(int shape) {
     Stats.PINPUSH.increment();
+
+    // make pins
+    int v1 = Shape.v1(shape);
+    int v2 = Shape.v2(shape);
+    int pins = ((v1 | v2) & 0xf) * Shape.PIN_MASK;
+
+    int result = 0;
     // Step 1: break all cut crystals
     // Check all 4 places that a crystal can span the cut
     List<Integer> todo = new ArrayList<>();
@@ -393,10 +398,10 @@ class Ops {
     shape &= ~found;
 
     // Step 2: Raise shape and add pins
-    int v1 = Shape.v1(shape);
-    int v2 = Shape.v2(shape);
-    shape = ((v1 | v2) & 0xf) * Shape.PIN_MASK;
-    shape |= (v2 << 20) | ((v1 & 0x0fff) << 4);
+    v1 = Shape.v1(shape);
+    v2 = Shape.v2(shape);
+    shape = (v2 << 20) | ((v1 & 0x0fff) << 4);
+    shape |= pins;
 
     // Step 3: Collapse parts
     shape = collapse(shape, new int[] { 0, 1, 2, 3 });

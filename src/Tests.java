@@ -1,7 +1,6 @@
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
@@ -30,8 +29,8 @@ public class Tests {
   static final String IMP_SHAPES_FILENAME_2 = "data/impShapes2.txt";
   static final String IMP_SHAPES_FILENAME_3 = "data/impShapes3.txt";
 
-  static final String SOLUTION_FILENAME = "BigData/shapes.db";
-  static final String SOLUTION_FILENAME_2 = "BigData/shapes2.db";
+  static final String SOLUTION_FILENAME = "BigData/dbout";
+  static final String SOLUTION_FILENAME_3 = "BigData/dbout/SDB00";
 
   static final int[] FLOAT_MASKS = { 0b01110010, 0b10110001, 0b11011000, 0b11100100 };
   static final int[] FLOAT_VALUE = { 0b00100000, 0b00010000, 0b10000000, 0b01000000 };
@@ -44,8 +43,8 @@ public class Tests {
   static Set<Integer> allShapes, impShapes;
   static Map<Integer, Solver.Build> allBuilds;
 
-  private static IntStream allShapeStream() {
-    return allShapes.stream().mapToInt(Integer::intValue);
+  private static IntStream shapeStream(Set<Integer> shapes) {
+    return shapes.stream().mapToInt(Integer::intValue);
     // .peek(num -> System.out.println(String.format("%08x", num) + " " + Thread.currentThread().getName()));
   }
 
@@ -54,9 +53,13 @@ public class Tests {
   }
 
   static void run() {
-    // loadSolutions(SOLUTION_FILENAME);
-    // loadShapes();
+    // loadShapes(SOLUTION_FILENAME_3);
+    loadSolutions(SOLUTION_FILENAME);
     // shapeStats();
+    // diffShapes("BigData/shapes3-all.db");
+    System.out.println(new Shape(0x0053));
+    findSolution(allBuilds, 0x0053);
+
     // findImpossibleShapes();
     // filterPossibleShapes();
     // filterImpossibleShapes();
@@ -69,30 +72,36 @@ public class Tests {
     // code2();
     // code3();
     // compFiles("BigData/shapes-4.db", "BigData/shapes-5.db");
-    // System.out.println(new Shape(0x000f0005));
-    allBuilds = ShapeFile.readMultiDB("BigData/dbin");
-    ShapeFile.writeMultiDB("BigData/temp", allBuilds);
+    // allBuilds = ShapeFile.readMultiDB("BigData/dbin");
+    // ShapeFile.writeMultiDB("BigData/temp", allBuilds);
   }
 
-  private static void loadShapes() {
-    allShapes = ShapeFile.read(ALL_SHAPES_FILENAME_3);
-    // impShapes = ShapeFile.read(IMP_SHAPES_FILENAME_3);
+  private static void loadShapes(String name) {
+    allShapes = ShapeFile.read(name);
   }
 
   private static void loadSolutions(String name) {
-    allBuilds = ShapeFile.readDB_old(name);
+    allBuilds = ShapeFile.readMultiDB(name);
   }
 
   static void shapeStats() {
-    int[] layer1 = allShapeStream().filter(s -> Shape.layerCount(s) == 1).toArray();
-    int[] layer2 = allShapeStream().filter(s -> Shape.layerCount(s) == 2).toArray();
-    int[] layer3 = allShapeStream().filter(s -> Shape.layerCount(s) == 3).toArray();
-    int[] keyShapes1 = IntStream.of(layer1).filter(Shape::isKeyShape).toArray();
-    int[] keyShapes2 = IntStream.of(layer2).filter(Shape::isKeyShape).toArray();
-    int[] keyShapes3 = IntStream.of(layer3).filter(Shape::isKeyShape).toArray();
-    System.out.printf("1-layer %10d %10d\n", layer1.length, keyShapes1.length);
-    System.out.printf("2-layer %10d %10d\n", layer2.length, keyShapes2.length);
-    System.out.printf("3-layer %10d %10d\n", layer3.length, keyShapes3.length);
+    int[] LAYERS = new int[] { 1, 2, 3, 4 };
+    int[] shapes, keyShapes;
+    for (int layer : LAYERS) {
+      shapes = shapeStream(allShapes).filter(s -> Shape.layerCount(s) <= layer).toArray();
+      keyShapes = IntStream.of(shapes).filter(Shape::isKeyShape).toArray();
+      System.out.printf("%d-layer %,10d %,10d\n", layer, shapes.length, keyShapes.length);
+    }
+  }
+
+  /* Compare two shape files */
+  static void diffShapes(String name) {
+    Set<Integer> oldShapes = ShapeFile.read(name);
+    System.out.printf("old %,10d\n", oldShapes.size());
+    System.out.printf("new %,10d\n", allShapes.size());
+    int[] shapes = shapeStream(allShapes).filter(shape -> !oldShapes.contains(shape)).toArray();
+    Arrays.sort(shapes);
+    Arrays.stream(shapes).forEach(shape -> System.out.printf("%08x\n", shape));
   }
 
   static boolean hasFloat(int shape) {
@@ -185,7 +194,7 @@ public class Tests {
   static void filterPossibleShapes() {
     final String POS_SHAPES_NAME = "data/posShapes.txt";
 
-    IntStream stream = allShapeStream();
+    IntStream stream = shapeStream(allShapes);
     stream = stream.filter(s -> Shape.layerCount(s) == 3);
     stream = stream.filter(s -> !Tests.hasGaps(s));
     // stream = stream.filter(Tests::crystalOverGap);
@@ -211,7 +220,7 @@ public class Tests {
 
   static void makeSwapShapes() {
     final String SWAP_NAME = "swap.txt";
-    IntStream stream = allShapeStream().mapMulti((left, consumer) -> {
+    IntStream stream = shapeStream(allShapes).mapMulti((left, consumer) -> {
       for (int right : allShapes)
         consumer.accept(Ops.swapRight(left, right));
     });
@@ -220,8 +229,8 @@ public class Tests {
 
   static void makeFastSwapShapes() {
     final String FASTSWAP_NAME = "data/fastswap.txt";
-    int[] lefts = allShapeStream().filter(Shape::isLeftHalf).toArray();
-    int[] rights = allShapeStream().filter(Shape::isRightHalf).toArray();
+    int[] lefts = shapeStream(allShapes).filter(Shape::isLeftHalf).toArray();
+    int[] rights = shapeStream(allShapes).filter(Shape::isRightHalf).toArray();
     IntStream stream = IntStream.of(lefts).mapMulti((left, consumer) -> {
       for (int right : rights)
         consumer.accept(Ops.fastSwapRight(left, right));
@@ -238,7 +247,7 @@ public class Tests {
     // Convert to key values
     Set<Integer> keyShapes = swapShapes.stream().map(Ops::keyValue).distinct().collect(Collectors.toSet());
     // Filter out swap shapes
-    IntStream stream = allShapeStream().filter(s -> !keyShapes.contains(Ops.keyValue(s)));
+    IntStream stream = shapeStream(allShapes).filter(s -> !keyShapes.contains(Ops.keyValue(s)));
     // Convert to key values
     stream = stream.map(Ops::keyValue).distinct();
     ShapeFile.write(RESULT_NAME, stream.sorted().parallel().toArray());
@@ -338,8 +347,8 @@ public class Tests {
 
   /* Misc analysis */
   void Find1() {
-    int[] lefts = allShapeStream().filter(Shape::isLeftHalf).toArray();
-    int[] rights = allShapeStream().filter(Shape::isRightHalf).toArray();
+    int[] lefts = shapeStream(allShapes).filter(Shape::isLeftHalf).toArray();
+    int[] rights = shapeStream(allShapes).filter(Shape::isRightHalf).toArray();
     Set<Integer> workSet = new HashSet<>(allShapes);
     int[] shapes;
     // Get list of all shapes that can be swapped.
@@ -367,8 +376,8 @@ public class Tests {
     // Find all shapes that can be made by swapping
     int[] shapes;
     // Set<Integer> workSet;
-    int[] lefts = allShapeStream().filter(Shape::isLeftHalf).toArray();
-    int[] rights = allShapeStream().filter(Shape::isRightHalf).toArray();
+    int[] lefts = shapeStream(allShapes).filter(Shape::isLeftHalf).toArray();
+    int[] rights = shapeStream(allShapes).filter(Shape::isRightHalf).toArray();
     // Stream stream = allShapeStream().mapMulti((left, consumer) -> {
     // for (int right : allShapes)
     // consumer.accept(Ops.swapRight(left, right));
@@ -379,14 +388,14 @@ public class Tests {
     });
     Set<Integer> allSwapKeys = stream.parallel().filter(s -> (s == Ops.keyValue(s))).boxed()
         .collect(Collectors.toSet());
-    shapes = allShapeStream().filter(s -> !allSwapKeys.contains(Ops.keyValue(s))).parallel().toArray();
+    shapes = shapeStream(allShapes).filter(s -> !allSwapKeys.contains(Ops.keyValue(s))).parallel().toArray();
     Tools.displayShapes(shapes);
   }
 
   void writeTest1() {
     final String filename = "data/test1.txt";
     System.out.printf("Writing file: %s\n", filename);
-    ShapeFile.write(filename, allShapeStream().sorted().toArray());
+    ShapeFile.write(filename, shapeStream(allShapes).sorted().toArray());
   }
 
   static void readTest1() {
@@ -474,8 +483,8 @@ public class Tests {
   }
 
   static void compFiles(String name1, String name2) {
-    Map<Integer, Solver.Build> b1 = ShapeFile.readDB_old(name1);
-    Map<Integer, Solver.Build> b2 = ShapeFile.readDB_old(name2);
+    Map<Integer, Solver.Build> b1 = ShapeFile.readMultiDB(name1);
+    Map<Integer, Solver.Build> b2 = ShapeFile.readMultiDB(name2);
     Set<Integer> keys = b1.keySet();
     int found = 0, cost1, cost2;
     for (Integer key : keys) {

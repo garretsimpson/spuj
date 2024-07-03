@@ -1,4 +1,3 @@
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -10,7 +9,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -56,31 +54,31 @@ public class ShapeFile {
     }
   }
 
-  /* TODO: Need a faster file reader */
   static Set<Integer> read(String name) {
-    System.out.printf("Reading file: %s\n", name);
-    Set<Integer> dataSet = new HashSet<>();
-    String value;
-    int shape;
-    try (Scanner scan = new Scanner(new FileReader(name))) {
-      scan.useRadix(16);
-      scan.useDelimiter("[\\s+,]");
-      while (scan.hasNext()) {
-        value = scan.next();
-        // System.out.println(value);
-        if (value.startsWith("value")) {
-          shape = scan.nextInt();
-          // System.out.printf("SHAPE: %08x\n", shape);
-          dataSet.add(shape);
-          scan.nextLine();
-        }
-      }
+    final int SIZE = 350000000;
+    Set<Integer> result = new HashSet<>(SIZE);
+
+    /* Get list of files */
+    Path file = Paths.get(name);
+    if (!Files.isRegularFile(file)) {
+      System.err.printf("Unknown file: %s\n", name);
+      return null;
+    }
+
+    System.out.printf("Reading file: %s\n", file);
+    try (Stream<String> lines = Files.lines(file)) {
+      lines.forEach(line -> {
+        String[] values = line.split(",");
+        int shape = Integer.parseUnsignedInt(values[0], 16);
+        result.add(shape);
+      });
     } catch (Exception e) {
-      System.err.printf("Error reading file: %s\n", name);
       e.printStackTrace();
     }
-    System.out.printf("Number of values read: %,d\n", dataSet.size());
-    return dataSet;
+    // break;
+    System.out.printf("number of shapes: %d\n", result.size());
+
+    return result;
   }
 
   static void write(String name, Set<Integer> data, boolean append) {
@@ -114,54 +112,10 @@ public class ShapeFile {
     }
   }
 
-  static void writeSlow(String name, Set<Integer> data, boolean append) {
-    System.out.printf("Writing file: %s\n", name);
-    try (FileWriter file = new FileWriter(name, append)) {
-      int value;
-      PrintWriter out = new PrintWriter(file);
-      for (long i = 0; i <= 0xffffffffl; ++i) {
-        value = (int) i;
-        if (data.contains(value))
-          out.printf("%08x\n", value);
-        // out.println(new Shape(value));
-      }
-    } catch (Exception e) {
-      System.err.printf("Error writing file: %s\n", name);
-      e.printStackTrace();
-    }
-    System.out.printf("Number of values written: %,d\n", data.size());
-  }
-
   static void sort(String name) {
     System.out.printf("Sorting file: %s\n", name);
-    Map<Integer, Solver.Build> dataMap = readDB_old(name);
+    Map<Integer, Solver.Build> dataMap = readMultiDB(name);
     writeDB(name, dataMap, false);
-  }
-
-  /* TODO: Need a faster file reader */
-  static Map<Integer, Solver.Build> readDB_old(String name) {
-    final int BASE = 16;
-    System.out.printf("Reading file: %s\n", name);
-    Map<Integer, Solver.Build> dataMap = new HashMap<>();
-    Integer shape, shape1, shape2, cost;
-    String opCode;
-    try (Scanner scan = new Scanner(new FileReader(name))) {
-      scan.useRadix(BASE);
-      scan.useDelimiter("[\\s,]");
-      while (scan.hasNext()) {
-        shape = Integer.parseUnsignedInt(scan.next(), BASE);
-        opCode = scan.next();
-        shape1 = Integer.parseUnsignedInt(scan.next(), BASE);
-        shape2 = Integer.parseUnsignedInt(scan.next(), BASE);
-        cost = scan.nextInt();
-        dataMap.put(shape, new Solver.Build(cost, Ops.nameByCode.get(opCode), shape, shape1, shape2));
-      }
-    } catch (Exception e) {
-      System.err.printf("Error reading file: %s\n", name);
-      e.printStackTrace();
-    }
-    System.out.printf("Number of values read: %,d\n\n", dataMap.size());
-    return dataMap;
   }
 
   static class Build {
@@ -170,9 +124,7 @@ public class ShapeFile {
     int shape1, shape2;
   }
 
-  /* Read all files in a directory and return all builds */
   static Map<Integer, Solver.Build> readMultiDB(String name) {
-    // static Build[][] readDB(String name) {
     final int SIZE = 350000000;
     Map<Integer, Solver.Build> result = new HashMap<>(SIZE);
 
@@ -208,7 +160,6 @@ public class ShapeFile {
       } catch (Exception e) {
         e.printStackTrace();
       }
-      // break;
     }
     System.out.printf("number of builds: %d\n", result.size());
 

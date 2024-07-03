@@ -2394,6 +2394,23 @@ I wonder what it cost me in CPU hours.
 
 1 less shape than before???
 
+Reran Constructor with 4-layers...
+
+ITER #45
+ONE_OPS 4 4362465 > 17449860
+TWO_OPS 2 4362465 341614171 > 5999181659718510
+TODO 53380
+
+ITER #46
+ONE_OPS 4 53380 > 213520
+TWO_OPS 2 53380 345976636 > 73878630167520
+DONE
+
+Time: 4723312
+cut: 346030016, swap: 259596544, stack: 27682401280, rotate: 346030016, pinPush 346030016, crystal 346030016, collapse: 692060032
+
+Now the count is 346,030,016 which matches the Solver.
+
 -rw-r--r--. 1 ec2-user ec2-user 11,418,990,528 Jul  1 02:22 shapes.db
 -rw-r--r--. 1 ec2-user ec2-user  2,313,787,844 Jul  1 02:22 shapes.db.gz
 
@@ -2442,3 +2459,117 @@ A binary file with 2^16 entries
 2-layer       35,280   71  0.9 seconds
 3-layer    3,865,587  112   85 seconds
 4-layer  346,030,016  148  10+ hours
+
+TODO
+- There seems to be more 3-layer shapes in the 4-layer build than in 3-layer alone.
+- Need to run a compare.
+- Also check 2-layers shapes that are found with 4-layer.
+
+3,865,587 3-layer
+3,874,039 SDB00
+
+number of builds: 346030016
+1-layer        255         54
+2-layer      35408       5109
+3-layer    3874039     504006
+4-layer  346030016   43768798
+
+With just SDB00...
+
+number of builds: 3874039
+1-layer        255         54
+2-layer     35,408      5,109
+3-layer  3,874,039    504,006
+4-layer  3,874,039    504,006
+
+Oh no, it found 0x53 as a possible shape in the 4-layer solutions.
+Maybe a bug with PinPush?
+
+number of builds: 346030016
+
+value: 00000053, code: RrRr----:Rg--Rg--:--------:--------
+Find solution for: 00000053
+ 22 00000053 <- PP(cacfffff)
+ 21   cacfffff <- XX(00473530)
+ 19     00473530 <- PP(00040353)
+ 18       00040353 <- SW(00040040, 00000313)
+  5         00040040 <- CL(00060060)
+  4           00060060 <- PP(00000006)
+  3             00000006 <- RR(00000003)
+  2               00000003 <- CR(0000000f)
+  1                 0000000f <--
+ 12         00000313 <- CR(00000f9f)
+ 11           00000f9f <- ST(0000000f, 0000009f)
+  1             0000000f <--
+  7             0000009f <- ST(00000009, 0000000f)
+  3               00000009 <- RL(00000003)
+  2                 00000003 <- CR(0000000f)
+  1                   0000000f <--
+  1               0000000f <--
+
+It does a 4-layer crystal and then a pinpush.
+I think I have to do this in game to see what's happening.
+
+ 21   cacfffff <- XX(00473530)
+This is correct.
+It's making a 4-layer crystal.
+All crystal except for 3530
+
+ 22 00000053 <- PP(cacfffff)
+This is wrong.
+It should be 000f0170.
+Which is 0530 collapsed, with pins on the bottom.
+The pinpush should have broke all crystal execpt for 20002000.
+But then collapse should have broken that one, and changed 5300 to be 0017.
+
+My PushPins didn't collapse or add the pins in this case.
+
+Input shape:    cacfffff
+Crystals found: 88cf88cf
+Break crystals: 42007730
+Pins:           00000000
+Note: pins should be 000f0000, because original shape had 000f on bottom layer.
+Raise:          20007300
+
+Issue
+- If the bottom layer is empty after breaking pins, does it raise up at all?
+- I suppose it should raise up (add pins), then break crystals, then collapse.
+- So there will be 4 pins on the bottom in this case.
+- And, becuase the left-over crystal falls, it should break.
+
+Input shape:    cacfffff
+Crystals found: 88cf88cf
+Break crystals: 42007730
+Raise:          20007300
+Pins:           200f7300
+Collapse:       000f0530
+Note: Collapse should be 000f0170.  Looks like the quad 3 on layer 3 (0400) didn't fall.
+The top layer is 20007000, which is a 5 with a crystal at 2.
+Collapse didn't find the 5, because the crystal is still there, and it thinks it is a solid 7.
+But the 7 falls, breaks the crystal at 2, and the result is a 5 on layer 3.
+
+How to fix this?
+- Need to check the layer for support, break crystals if needed, split the 5 into two parts, and then drop them.
+
+TODO
+- what if left-over crystals don't fall?
+- need to test this in game.
+- rerun all shapes and builds.
+
+Constructor
+
+Time: 63
+cut: 255, swap: 225, stack: 20400, rotate: 255, pinPush 255, crystal 255, collapse: 510
+Time: 221
+cut: 35280, swap: 32400, stack: 2822400, rotate: 35280, pinPush 35280, crystal 35280, collapse: 70560
+Time: 13479
+cut: 3865587, swap: 3222025, stack: 309246960, rotate: 3865587, pinPush 3865587, crystal 3865587, collapse: 7731174
+
+Solver
+
+Time: 184
+cut: 510, swap: 450, stack: 20400, rotate: 765, pinPush 255, crystal 255, collapse: 765
+Time: 877
+cut: 70560, swap: 64800, stack: 2822400, rotate: 105840, pinPush 35280, crystal 35280, collapse: 105840
+Time: 80266
+cut: 7731174, swap: 6444050, stack: 309246960, rotate: 11596761, pinPush 3865587, crystal 3865587, collapse: 11596761
