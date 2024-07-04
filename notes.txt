@@ -2639,8 +2639,90 @@ TODO
 - Need to be able to read only a specified part, and keep track of which parts are already loaded.
 - Like a cache.
 
-3,865,587 3-layer
+3,865,587 shapes3-all.db
 3,874,039 SDB00-bad
 3,867,639 SDB00
 
-still found more shapes.
+still found more shapes...
+
+number found: 2052
+
+Find solution for: 00030510
+value: 00030510, code: P-P-----:Rg------:Rb--Rb--:--------
+00030510 <- PP(22222273)
+  22222273 <- RR(111111b9)
+    111111b9 <- SW(11111131,00000088)
+      11111131 <- CR(111199fd)
+        111199fd <- RR(8888ccfe)
+          8888ccfe <- SW(8888cccc,00000032)
+            8888cccc <- CL(8888ffff)
+              8888ffff <- XX(00007777)
+                00007777 <- SW(00004444,00003333)
+                  00004444 <- CL(00006666)
+                    00006666 <- RR(00003333)
+                      00003333 <- CR(0000ffff)
+                        0000ffff <- ST(0000000f,00000fff)
+                          0000000f <-
+                          00000fff <- ST(0000000f,000000ff)
+                            0000000f <-
+                            000000ff <- ST(0000000f,0000000f)
+                              0000000f <-
+                              0000000f <-
+                  00003333 <- CR(0000ffff)
+                    0000ffff <- ST(0000000f,00000fff)
+                      0000000f <-
+                      00000fff <- ST(0000000f,000000ff)
+                        0000000f <-
+                        000000ff <- ST(0000000f,0000000f)
+                          0000000f <-
+                          0000000f <-
+            00000032 <- CR(000000f6)
+              000000f6 <- ST(0000000f,00000006)
+                0000000f <-
+                00000006 <- RL(0000000c)
+                  0000000c <- CL(0000000f)
+                    0000000f <-
+      00000088 <- CL(00000099)
+        00000099 <- RL(00000033)
+          00000033 <- CR(000000ff)
+            000000ff <- ST(0000000f,0000000f)
+              0000000f <-
+              0000000f <-
+
+Oh no, looks like another 5 on top of 1.
+Another pinpush breaking crystals.
+
+00030510 <- PP(22222273)
+should be
+00030114 <- PP(22222273)
+
+value: 22222273, code: Rrcr----:RgcgRg--:--cb----:--cw----
+value: 00030510, code: P-P-----:Rg------:Rb--Rb--:--------
+
+Collapse thinks 5 is supported by 1, so it just copies the layer instead of dropping two parts.
+This was changed recently.
+The problem before was that there was a 7 with crystal at two.  But it falls and the crystal breaks leaving a 5.
+The game does the right thing.
+
+How to fix?
+- Collapse may need to drop two parts on each layer.
+- The only cases of two parts is 0x5 and 0xa.
+- Either part may be a crystal.
+- If it's not one of those, then it only needs to drop one part.
+- But... if the part falls, and breaks a crystal, then it may turn into two parts that need to drop separately.
+
+fixed it by doing multi-part check twice.
+Once before breaking crystals, and once after.
+
+Rerun solver for all layers...
+
+Time: 205
+cut: 510, swap: 450, stack: 20400, rotate: 765, pinPush 255, crystal 255, collapse: 765
+Time: 821
+cut: 70560, swap: 64800, stack: 2822400, rotate: 105840, pinPush 35280, crystal 35280, collapse: 105840
+Time: 89852
+cut: 7731174, swap: 6444050, stack: 309246960, rotate: 11596761, pinPush 3865587, crystal 3865587, collapse: 11596761
+
+It's slower now: 90sec was 80sec
+
+

@@ -36,6 +36,7 @@ enum OpTests {
   PIN_03(Ops::pinPush, 0xf931, 0x00019310) {},
   PIN_04(Ops::pinPush, 0x11701571, 0x00010014) {},
   PIN_05(Ops::pinPush, 0xcacfffff, 0x000f0170) {},
+  PIN_06(Ops::pinPush, 0x22222273, 0x00030114) {},
 
   CRYSTAL_01(Ops::crystal, 0x0001, 0x000e000f) {},
   CRYSTAL_02(Ops::crystal, 0x00010010, 0x00ef00ff) {},

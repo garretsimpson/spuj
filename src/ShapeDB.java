@@ -1,7 +1,7 @@
 
 /**
- * A shapeDB contains builds for a set of shapes
- * The shapeDB may be split into multiple files.
+ * A ShapeDB contains builds for a set of shapes.
+ * The data may be split into multiple files.
  * The filename format SDBXY contains shapes with int values of XxxxYxxx.
  */
 
@@ -80,7 +80,6 @@ public class ShapeDB {
         int shape1 = Integer.parseUnsignedInt(values[2], 16);
         int shape2 = Integer.parseUnsignedInt(values[3], 16);
         // int cost = Integer.parseUnsignedInt(values[4], 16);
-        // result.put(shape, new Solver.Build(cost, opName, shape, shape1, shape2));
         builds.put(shape, new Build(opName, shape1, shape2));
       });
     } catch (Exception e) {

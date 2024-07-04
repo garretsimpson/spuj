@@ -57,7 +57,6 @@ public class Tests {
     // loadSolutions(SOLUTION_FILENAME_3);
     // shapeStats();
     // diffShapes("BigData/shapes3-all.db");
-    // testShape();
     // findImpossibleShapes();
     // filterPossibleShapes();
     // filterImpossibleShapes();
@@ -67,7 +66,9 @@ public class Tests {
     // allBuilds = ShapeFile.readMultiDB("BigData/dbin");
     // ShapeFile.writeMultiDB("BigData/temp", allBuilds);
     // testDB();
-    testSolutions();
+    // testSolutions();
+    // findNewShapes();
+    testShape();
   }
 
   private static void loadShapes(String name) {
@@ -79,7 +80,8 @@ public class Tests {
   }
 
   static void testShape() {
-    int shape = 0xcacfffff;
+    // int shape = 0xcacfffff;
+    int shape = 0x22222273;
     System.out.println(new Shape(shape));
     shape = Ops.pinPush(shape);
     System.out.println(new Shape(shape));
@@ -533,5 +535,21 @@ public class Tests {
     // findSolution(db, 0x0f030f3f);
     // findSolution(db, 0x0f330f3f);
     // findSolution(db, 0x0003001c);
+  }
+
+  /* Compare new database with old and list all new shapes found */
+  static void findNewShapes() {
+    Map<Integer, Solver.Build> oldDB = ShapeFile.readMultiDB("BigData/shapes3-all.db");
+    Map<Integer, Solver.Build> newDB = ShapeFile.readMultiDB("BigData/dbout/SDB00");
+    Set<Integer> keySet = newDB.keySet();
+    keySet.removeAll(oldDB.keySet());
+    for (Integer key : keySet) {
+      System.out.printf("%08x\n", key);
+    }
+    System.out.println("number found: " + keySet.size());
+
+    int[] shapes = keySet.stream().mapToInt(Integer::intValue).toArray();
+    ShapeDB db = ShapeDB.open("BigData/dbout");
+    findSolution(db, shapes[0]);
   }
 }

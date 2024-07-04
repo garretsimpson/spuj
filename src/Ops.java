@@ -3,6 +3,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.IntStream;
 
 /**
  * Ops
@@ -281,8 +282,9 @@ class Ops {
 
     // First layer remains unchanged
     int result = shape & Shape.LAYER_MASK;
-    
+
     // int[] layerNums = new int[]{1, 2, 3};
+    // IntStream.range(1, 4).forEach(layerNum -> ...)
     for (int layerNum = 1; layerNum < Shape.NUM_LAYERS; ++layerNum) {
       part = (shape >>> (4 * layerNum)) & Shape.LAYER_MASK;
       if (part == 0)
@@ -296,31 +298,47 @@ class Ops {
         }
       }
 
+      // find parts
+      List<Integer> parts = new ArrayList<>(2);
+      v1 = Shape.v1(part);
+      if (v1 == 0x5) {
+        parts.add(part & (Shape.CRYSTAL_MASK << 0));
+        parts.add(part & (Shape.CRYSTAL_MASK << 2));
+      } else if (v1 == 0xa) {
+        parts.add(part & (Shape.CRYSTAL_MASK << 1));
+        parts.add(part & (Shape.CRYSTAL_MASK << 3));
+      } else {
+        parts.add(part);
+      }
+
       // Check if part is supported
       prevLayer = (result >>> (4 * (layerNum - 1))) & Shape.LAYER_MASK;
-      v1 = Shape.v1(prevLayer);
-      v2 = Shape.v2(prevLayer);
-      supported = (part & 0xffff & (v1 | v2)) != 0;
-      if (supported) {
-        // copy part
-        result |= part << (4 * layerNum);
-        continue;
+      prevLayer = Shape.v1(prevLayer) | Shape.v2(prevLayer);
+      for (int part1 : parts) {
+        supported = (part1 & prevLayer) != 0;
+        if (supported) {
+          // copy part
+          result |= part1 << (4 * layerNum);
+          continue;
+        }
+        // break crystals
+        v2 = Shape.v2(part1);
+        part1 &= ~(v2 * Shape.CRYSTAL_MASK);
+        if (part1 == 0)
+          continue;
+        // drop parts
+        // Note: Need to do this again because it might be two parts after breaking crystals.
+        if (part1 == 0x5) {
+          result = dropPart(result, 0x1, layerNum);
+          result = dropPart(result, 0x4, layerNum);
+        } else if (part1 == 0xa) {
+          result = dropPart(result, 0x2, layerNum);
+          result = dropPart(result, 0x8, layerNum);
+        } else {
+          result = dropPart(result, part1, layerNum);
+        }
       }
 
-      // break crystals
-      v2 = Shape.v2(part);
-      part &= ~(v2 * Shape.CRYSTAL_MASK);
-
-      // drop parts
-      if (part == 0x5) {
-        result = dropPart(result, 0x1, layerNum);
-        result = dropPart(result, 0x4, layerNum);
-      } else if (part == 0xa) {
-        result = dropPart(result, 0x2, layerNum);
-        result = dropPart(result, 0x8, layerNum);
-      } else {
-        result = dropPart(result, part, layerNum);
-      }
     }
     return result;
   }
