@@ -2451,7 +2451,7 @@ A binary file with 2^16 entries
 
 3-layers
 - find shapes        14 seconds
-- any solution       42 seconds ?
+- any solution       32 seconds ?
 - low cost solution  85 seconds
 
               shapes  max  time
@@ -2573,3 +2573,74 @@ Time: 877
 cut: 70560, swap: 64800, stack: 2822400, rotate: 105840, pinPush 35280, crystal 35280, collapse: 105840
 Time: 80266
 cut: 7731174, swap: 6444050, stack: 309246960, rotate: 11596761, pinPush 3865587, crystal 3865587, collapse: 11596761
+
+TODO
+- shape-bot can display solutions...
+/operation-graph instructions:1=P-+fill; 2=Wg+fill; 1,2:stack:3 public:false
+
+1=crcrcrcr:RgRgcgcg:RbcbRbcb:RwRwcwcw; 1:pin:2
+
+ 31 crP-crP- <- SW(crP-----, ----crP-)
+ 15   crP----- <- CR(crP-P-Rr)
+ 14     crP-P-Rr <- RR(P-P-Rrcr)
+ 13       P-P-Rrcr <- SW(----Rrcr, P-P-----)
+
+1=crP-crP-; 2=crP-----; 3=----crP-; 4=crP-P-Rr; 5=P-P-Rrcr; 6=----Rrcr; 7=P-P-----; 2,3:sh:8,9; 4:cut:10,11; 5:r90cw:12; 6,7:sh:13,14
+
+1=----crP-; 2=----Rrcr; 3=P-P-----; 2,3:sh:4,5; 4:r90cw:6; 6:cut:7,8; 8,1:sh:9,10
+
+Fixed the pinpush bug and ran 4-layer solver...
+
+TODO
+ 252:          8
+
+COST                     252
+SIZE                       8
+TOTAL            349,267,176
+BUILDS           349,267,184
+ONE_OPS                   56
+TWO_OPS       16,764,824,640
+FOUND                      0
+DUPS                       0
+NEW                        0
+
+DONE
+
+Time: 49421927
+cut: 698534368, swap: 523067168, stack: 27941374720, rotate: 1047801552, pinPush 349267184, crystal 349267184, collapse: 1047801552
+
+Shutdown
+Writing file: BigData/shapes.db
+
+Solver results
+TOTAL            349,267,184
+SUM_COST       2,052,824,440
+MAX_COST                 252 (fc)
+
+ec2-user 11525817072 Jul  4 05:47 shapes.db
+
+more shapes now.
+13.7 hours
+sum_cost is probaly wrong, it's an int that wrapped around.
+
+I think there are three tiers of MAMs.  Each tier has a set of shapes it supports and methods needed to build them.
+
+SPG MAM - Can make any shape with solids, pins and gaps (no crystals)
+- Method 1: Pins on top of solids
+SCP MAM - Can make any shape with solids, cystals and pins (no gaps)
+- Method 2: Crystal on top of solid
+- Method 3: Crystal on top of pin
+EMAM - Everything MAM - Can make all possible shapes
+- Method 4: gap under solid
+- Method 5: gap under crystal
+
+TODO
+- Load only the parts/files of the database that are needed to show the solution.
+- Need to be able to read only a specified part, and keep track of which parts are already loaded.
+- Like a cache.
+
+3,865,587 3-layer
+3,874,039 SDB00-bad
+3,867,639 SDB00
+
+still found more shapes.

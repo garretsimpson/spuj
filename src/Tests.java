@@ -30,7 +30,7 @@ public class Tests {
   static final String IMP_SHAPES_FILENAME_3 = "data/impShapes3.txt";
 
   static final String SOLUTION_FILENAME = "BigData/dbout";
-  static final String SOLUTION_FILENAME_3 = "BigData/dbout/SDB00";
+  static final String SOLUTION_FILENAME_3 = "BigData/shapes3-all.db";
 
   static final int[] FLOAT_MASKS = { 0b01110010, 0b10110001, 0b11011000, 0b11100100 };
   static final int[] FLOAT_VALUE = { 0b00100000, 0b00010000, 0b10000000, 0b01000000 };
@@ -54,26 +54,20 @@ public class Tests {
 
   static void run() {
     // loadShapes(SOLUTION_FILENAME_3);
-    loadSolutions(SOLUTION_FILENAME);
+    // loadSolutions(SOLUTION_FILENAME_3);
     // shapeStats();
     // diffShapes("BigData/shapes3-all.db");
-    System.out.println(new Shape(0x0053));
-    findSolution(allBuilds, 0x0053);
-
+    // testShape();
     // findImpossibleShapes();
     // filterPossibleShapes();
     // filterImpossibleShapes();
-    // findSolution(allBuilds, 0xffffffff);
-    // findSolution(allBuilds, 0x000f0005);
-    // findSolution(allBuilds, 0x00ff005f);
-    // findSolution(0x0f030f3f);
-    // findSolution(0x0f330f3f);
-    // findSolution(0x0003001c);
     // code2();
     // code3();
     // compFiles("BigData/shapes-4.db", "BigData/shapes-5.db");
     // allBuilds = ShapeFile.readMultiDB("BigData/dbin");
     // ShapeFile.writeMultiDB("BigData/temp", allBuilds);
+    // testDB();
+    testSolutions();
   }
 
   private static void loadShapes(String name) {
@@ -82,6 +76,13 @@ public class Tests {
 
   private static void loadSolutions(String name) {
     allBuilds = ShapeFile.readMultiDB(name);
+  }
+
+  static void testShape() {
+    int shape = 0xcacfffff;
+    System.out.println(new Shape(shape));
+    shape = Ops.pinPush(shape);
+    System.out.println(new Shape(shape));
   }
 
   static void shapeStats() {
@@ -445,24 +446,38 @@ public class Tests {
       return String.format("%08x <- %s(%08x, %08x)", shape, build.opName.code, build.shape1, build.shape2);
   }
 
-  static void findSolution(Map<Integer, Solver.Build> builds, int shape, int indent) {
-    Solver.Build build = builds.get(shape);
-    System.out.printf("%3d ", build.cost);
-    System.out.println("  ".repeat(indent) + buildAsString(shape, build));
-    if (build.opName == Ops.Name.NOP)
-      return;
-    findSolution(builds, build.shape1, indent + 1);
-    if (build.shape2 != 0)
-      findSolution(builds, build.shape2, indent + 1);
+  static String buildAsCodeString(int shape, Solver.Build build) {
+    String s = new Shape(build.shape).getCode().split(":")[0];
+    String s1 = new Shape(build.shape1).getCode().split(":")[0];
+    String s2 = new Shape(build.shape2).getCode().split(":")[0];
+    if (build.opName == Ops.Name.NOP) {
+      return String.format("%s <--", s);
+    } else if (build.shape2 == 0) {
+      return String.format("%s <- %s(%s)", s, build.opName.code, s1);
+    } else {
+      return String.format("%s <- %s(%s, %s)", s, build.opName.code, s1, s2);
+    }
   }
 
-  static void findSolution(Map<Integer, Solver.Build> builds, int shape) {
+  static void findSolution(ShapeDB db, int shape, int indent) {
+    ShapeDB.Build build = db.getBuild(shape);
+    // System.out.printf("%3d ", build.cost);
+    System.out.printf("%s%08x <- %s\n", "  ".repeat(indent), shape, build);
+    if (build.opName == Ops.Name.NOP)
+      return;
+    findSolution(db, build.shape1, indent + 1);
+    if (build.shape2 != 0)
+      findSolution(db, build.shape2, indent + 1);
+  }
+
+  static void findSolution(ShapeDB db, int shape) {
     System.out.printf("Find solution for: %08x\n", shape);
-    if (builds == null || builds.get(shape) == null) {
+    System.out.println(new Shape(shape));
+    if (db == null || db.getBuild(shape) == null) {
       System.out.println("Build database or shape is missing");
       return;
     }
-    findSolution(builds, shape, 0);
+    findSolution(db, shape, 0);
   }
 
   static void f1(int... values) {
@@ -495,8 +510,28 @@ public class Tests {
         found = key;
       }
     }
-    findSolution(b1, found);
-    findSolution(b2, found);
+    // findSolution(b1, found);
+    // findSolution(b2, found);
   }
 
+  static void testDB() {
+    ShapeDB db = ShapeDB.open("BigData/dbout");
+    int[] shapes = new int[] { 0x1, 0xf, 0xf0, 0xffffffff };
+
+    ShapeDB.Build build;
+    for (int shape : shapes) {
+      build = db.getBuild(shape);
+      System.out.printf("%08x <- %s\n", shape, build);
+    }
+  }
+
+  static void testSolutions() {
+    ShapeDB db = ShapeDB.open("BigData/dbout");
+    findSolution(db, 0xffffffff);
+    findSolution(db, 0x000f0005);
+    findSolution(db, 0x00ff005f);
+    // findSolution(db, 0x0f030f3f);
+    // findSolution(db, 0x0f330f3f);
+    // findSolution(db, 0x0003001c);
+  }
 }

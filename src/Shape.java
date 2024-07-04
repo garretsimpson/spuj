@@ -152,6 +152,10 @@ public class Shape {
     return intValue;
   }
 
+  public String getCode() {
+    return code;
+  }
+
   public static int v1(int value) {
     return value & 0xffff;
   }
