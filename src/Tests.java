@@ -56,7 +56,6 @@ public class Tests {
     // loadShapes(SOLUTION_FILENAME_3);
     // loadSolutions(SOLUTION_FILENAME_3);
     // shapeStats();
-    // diffShapes("BigData/shapes3-all.db");
     // findImpossibleShapes();
     // filterPossibleShapes();
     // filterImpossibleShapes();
@@ -68,7 +67,21 @@ public class Tests {
     // testDB();
     // testSolutions();
     // findNewShapes();
-    testShape();
+    // testShape();
+    // System.out.println(new Shape(0x01050b10));
+    // System.out.println(new Shape(0x445444f5)); // f303f3f3
+    // System.out.println(new Shape(0xf303f3f3));
+    // System.out.println(new Shape(0xfcccfcfc));
+    // System.out.println(new Shape(0xf505f5f5));
+    // System.out.println(new Shape(0xf123f3f3));
+
+    // ShapeDB db = ShapeDB.open("BigData/dbout");
+    // findSolution(db, 0xfcccfcfc);
+    // findSolution(db, 0xfffe);
+
+    int[] shapes = diffShapes("BigData/shapes.db", "BigData/shapes3-all.db");
+    ShapeDB db = ShapeDB.open("BigData/dbout");
+    findSolution(db, shapes[0]);
   }
 
   private static void loadShapes(String name) {
@@ -98,13 +111,15 @@ public class Tests {
   }
 
   /* Compare two shape files */
-  static void diffShapes(String name) {
-    Set<Integer> oldShapes = ShapeFile.read(name);
+  static int[] diffShapes(String oldName, String newName) {
+    Set<Integer> oldShapes = ShapeFile.read(oldName);
+    Set<Integer> newShapes = ShapeFile.read(newName);
     System.out.printf("old %,10d\n", oldShapes.size());
-    System.out.printf("new %,10d\n", allShapes.size());
-    int[] shapes = shapeStream(allShapes).filter(shape -> !oldShapes.contains(shape)).toArray();
+    System.out.printf("new %,10d\n", newShapes.size());
+    int[] shapes = shapeStream(newShapes).filter(shape -> !oldShapes.contains(shape)).toArray();
     Arrays.sort(shapes);
-    Arrays.stream(shapes).forEach(shape -> System.out.printf("%08x\n", shape));
+    return shapes;
+    // Arrays.stream(shapes).forEach(shape -> System.out.printf("%08x\n", shape));
   }
 
   static boolean hasFloat(int shape) {
@@ -544,12 +559,14 @@ public class Tests {
     Set<Integer> keySet = newDB.keySet();
     keySet.removeAll(oldDB.keySet());
     for (Integer key : keySet) {
-      System.out.printf("%08x\n", key);
+      // System.out.printf("%08x\n", key);
+      System.out.println(new Shape(key));
     }
     System.out.println("number found: " + keySet.size());
 
-    int[] shapes = keySet.stream().mapToInt(Integer::intValue).toArray();
-    ShapeDB db = ShapeDB.open("BigData/dbout");
-    findSolution(db, shapes[0]);
+    // int[] shapes = keySet.stream().mapToInt(Integer::intValue).toArray();
+    // ShapeDB db = ShapeDB.open("BigData/dbout");
+    // findSolution(db, shapes[0]);
+    // findSolution(db, shapes[shapes.length - 1]);
   }
 }

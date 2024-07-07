@@ -73,6 +73,9 @@ public class Solver {
 
   private static Map<Ops.Name, Integer> opCosts = new HashMap<>();
 
+  // private static List<Integer> debugShapes = new ArrayList<>(Arrays.asList(0x000f00f0));
+  private static List<Integer> debugShapes;
+
   static {
     opCosts.put(Ops.Name.NOP, 0);
     opCosts.put(Ops.Name.ROTATE_RIGHT, 1);
@@ -133,14 +136,15 @@ public class Solver {
   }
 
   private void debugBuild(String name, Build build) {
-    if (build == null)
+    if ((debugShapes == null) || (build == null))
       return;
-    // if (build.shape == 0x00cc00c1)
-    System.out.printf("%s: %s\n", name, buildAsString(build));
+    if (debugShapes.contains(build.shape) || debugShapes.contains(build.shape1) || debugShapes.contains(build.shape2))
+      System.out.printf("%s: %s\n", name, buildAsString(build));
   }
 
   private int doOp(Ops.Name opName, int shape) {
     int result = Ops.invoke(opName, shape);
+    // debugBuild("OP", new Build(0, opName, result, shape));
     if (exit || (result == shape) || !maxLayers(result))
       return 0;
     synchronized (allBuilds) {
@@ -149,20 +153,21 @@ public class Solver {
       if (oldBuild == null) {
         newBuild = new Build(cost, opName, result, shape);
         allBuilds.put(result, newBuild);
+        // debugBuild("NEW", newBuild);
       } else if (cost < oldBuild.cost) {
         oldBuilds.add(oldBuild);
         newBuild = new Build(cost, opName, result, shape);
         allBuilds.put(result, newBuild);
+        // debugBuild("DUP_OLD", oldBuild);
+        // debugBuild("DUP_NEW", newBuild);
       }
-      // debugBuild("OLD", oldBuild);
-      // debugBuild("NEW", newBuild);
     }
     return result;
   }
 
   private int doOp(Ops.Name opName, int shape1, int shape2) {
     int result = Ops.invoke(opName, shape1, shape2);
-    // debugBuild("INP", new Build(0, opName, result, shape1, shape2));
+    // debugBuild("OP", new Build(0, opName, result, shape1, shape2));
     if (exit || (result == shape1) || (result == shape2) || !maxLayers(result))
       return 0;
     synchronized (allBuilds) {
@@ -171,13 +176,14 @@ public class Solver {
       if (oldBuild == null) {
         newBuild = new Build(cost, opName, result, shape1, shape2);
         allBuilds.put(result, newBuild);
+        // debugBuild("NEW", newBuild);
       } else if (cost < oldBuild.cost) {
         oldBuilds.add(oldBuild);
         newBuild = new Build(cost, opName, result, shape1, shape2);
         allBuilds.put(result, newBuild);
+        // debugBuild("DUP_OLD", oldBuild);
+        // debugBuild("DUP_NEW", newBuild);
       }
-      // debugBuild("OLD", oldBuild);
-      // debugBuild("NEW", newBuild);
     }
     return result;
   }
@@ -188,20 +194,6 @@ public class Solver {
 
   private int cost(Ops.Name opName, int shape1, int shape2) {
     return opCosts.get(opName) + allBuilds.get(shape1).cost + allBuilds.get(shape2).cost;
-  }
-
-  private int cost2(Ops.Name opName, int shape1, int shape2) {
-    Build build1 = allBuilds.get(shape1);
-    Build build2 = allBuilds.get(shape2);
-    int cost = opCosts.get(opName) + build1.cost + build2.cost;
-    // if Op is FAST_SWAP, reduce cost for each CUT that was done just prior
-    if (opName == Ops.Name.FAST_SWAP) {
-      if ((build1.opName == Ops.Name.CUT_RIGHT) || (build2.opName == Ops.Name.CUT_RIGHT))
-        cost -= opCosts.get(Ops.Name.CUT_RIGHT);
-      if ((build1.opName == Ops.Name.CUT_LEFT) || (build2.opName == Ops.Name.CUT_LEFT))
-        cost -= opCosts.get(Ops.Name.CUT_LEFT);
-    }
-    return cost;
   }
 
   private String todoString() {
@@ -217,6 +209,7 @@ public class Solver {
 
   void run() {
     // int[] shapes = Arrays.stream(Shape.FLAT_4).toArray();
+    // int[] shapes = Arrays.asList(Shape.FLAT_4, Shape.PIN_4).stream().flatMapToInt(Arrays::stream).toArray();
     int[] shapes = Arrays.stream(new int[][] { Shape.FLAT_4, Shape.PIN_4 }).flatMapToInt(Arrays::stream).toArray();
 
     System.out.println("Max iters: " + MAX_ITERS);
@@ -278,7 +271,8 @@ public class Solver {
     makeStreams(streams, inputShapes, Ops.Name.STACK, x -> this.oneLayerNoCrystal(x), x -> true);
 
     IntStream stream;
-    stream = streams.parallelStream().flatMapToInt(s -> s);
+    // TODO: not sure where parallel() should go.
+    stream = streams.stream().flatMapToInt(s -> s).parallel();
     stream = stream.filter(shape -> shape != 0);
     stream = stream.filter(shape -> !allShapes.contains(shape));
     stream = stream.filter(shape -> !inputShapes.contains(shape));

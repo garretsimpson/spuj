@@ -2725,4 +2725,117 @@ cut: 7731174, swap: 6444050, stack: 309246960, rotate: 11596761, pinPush 3865587
 
 It's slower now: 90sec was 80sec
 
+COST                     252
+SIZE                       8
+TOTAL            349,065,168
+BUILDS           349,065,176
+ONE_OPS                   56
+TWO_OPS       16,755,128,256
+FOUND                      0
+DUPS                       0
+NEW                        0
 
+DONE
+
+Time: 49247165
+cut: 698130352, swap: 523067168, stack: 27925214080, rotate: 1047195528, pinPush 349065176, crystal 349065176, collapse: 1047195528
+
+Shutdown
+Writing file: BigData/shapes.db
+
+Solver results
+TOTAL            349,065,176
+SUM_COST       2,039,899,152
+MAX_COST                 252 (fc)
+
+still found more shapes less than 4-layers...
+
+3,865,587 shapes3-all.db
+3,874,039 SDB00-bad1
+3,867,639 SDB00-bad2
+3,865,767 SDB00
+
+180 shapes
+
+"The Claw"
+01050b10 <- PP(445444f5)  
+value: 01050b10, code: P---P---:Rg------:cbRb--Rb:--------
+value: 445444f5, code: Rr--cr--:cgRgcgRg:----cb--:----cw--
+
+Is Rg------:cbRb--Rb possible?
+001000b1 - not found
+
+Is P-------:Rg------:cbRb--Rb:-------- possible?
+01010b10 - not found
+
+Is Rg--Rg--:cbRb--Rb possible?
+001000b5 - not found
+
+value: 0aaf0700, code: P-P-P-P-:--P---P-:RbcbRbP-:--------
+0aaf0700 <- ST(00080000,02af0700)
+
+All 180 shapes all appear to variatons on this, where there are two shelves suported by one crystal.
+
+Most expensive is 252 (fc)...
+
+SDBff:f303f3f3,RL,f606f6f6,00000000,fc
+SDBff:f313f3f3,RL,f626f6f6,00000000,fc
+SDBff:f323f3f3,RL,f646f6f6,00000000,fc
+SDBff:f333f3f3,RL,f666f6f6,00000000,fc
+SDBff:fc0cfcfc,RL,f909f9f9,00000000,fc
+SDBff:fc4cfcfc,RL,f989f9f9,00000000,fc
+SDBff:fc8cfcfc,RR,f646f6f6,00000000,fc
+SDBff:fcccfcfc,RR,f666f6f6,00000000,fc
+
+value: f303f3f3, code: crcr----:RgRgRgRg:cbcb----:cwcwcwcw
+value: fcccfcfc, code: ----crcr:RgRgcgcg:----cbcb:cwcwcwcw
+
+There should be less expensive way to make O:P:O
+
+fatcatx@Lynx:/mnt/c/Users/garre/Projects/spuj/BigData$ grep 00f00f0f dbout/SDB00
+00f00f0f,ST,0000000f,00f0000f,09
+
+fatcatx@Lynx:/mnt/c/Users/garre/Projects/spuj/BigData$ grep 000f00f0 dbout/SDB00
+000f00f0,PP,0000000f,00000000,02
+
+Why didn't it just stack this on top of 0xf?
+Cost should be 6, not 9.
+
+Because it's a 2-layer part, and there's a filter that removes top parts with more than 1-layer.
+If I remove the filter, then I get...
+
+00f00f0f,ST,000f00f0,0000000f,06
+
+Which stacks the 2-layer part with pins on bottom, on top of a flat.  The cost is 6, which is correct.
+This is an example of finding a lower cost when stacking with more then one layer on top.
+It saves one stack operation, which costs 3.
+
+Run all 3-layer with multi-layer tops...
+
+file: shape3-low.db
+
+Time: 17955427
+cut: 7731174, swap: 6444050, stack: 453974537280, rotate: 11596761, pinPush 3865587, crystal 3865587, collapse: 11596761
+
+Shutdown
+Writing file: BigData/shapes.db
+
+Solver results
+TOTAL              3,865,587
+SUM_COST         180,464,780
+MAX_COST                 112 (70)
+
+max cost is still the same.
+but took 5 hours instead of 90 seconds.
+
+TODO
+- Do a cost comparison.  Find shapes that cost less / more?
+
+              shapes  max  time
+1-layer          255   31  0.2 seconds
+2-layer       35,280   71  0.9 seconds
+3-layer    3,865,587  112   85 seconds
+4-layer  349,065,176  252  10+ hours
+
+Find some shapes that can't be made without pinpush.
+- crystals on pins
